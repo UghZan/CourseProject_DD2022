@@ -26,6 +26,8 @@ namespace DAL
                .IsUnique();
             //Table-Per-Type
             modelBuilder.Entity<Avatar>().ToTable(nameof(Avatars));
+            modelBuilder.Entity<PostPhoto>().ToTable(nameof(PostPhotos));
+            modelBuilder.Entity<Comment>().ToTable(nameof(Comments));
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder builder) => builder.UseNpgsql(b => b.MigrationsAssembly("API"));
@@ -33,6 +35,9 @@ namespace DAL
         public DbSet<User> Users => Set<User>();
         public DbSet<UserSession> Sessions => Set<UserSession>();
         public DbSet<Attach> Attaches => Set<Attach>();
+        public DbSet<PostPhoto> PostPhotos => Set<PostPhoto>();
         public DbSet<Avatar> Avatars => Set<Avatar>();
+        public DbSet<Post> Posts => Set<Post>();
+        public DbSet<Comment> Comments => Set<Comment>();
     }
 }

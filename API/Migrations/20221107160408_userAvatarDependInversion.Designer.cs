@@ -3,6 +3,7 @@ using System;
 using DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace API.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20221107160408_userAvatarDependInversion")]
+    partial class userAvatarDependInversion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -63,9 +65,6 @@ namespace API.Migrations
 
                     b.Property<Guid>("AuthorId")
                         .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreationDate")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PostContent")
                         .HasColumnType("text");
@@ -147,18 +146,6 @@ namespace API.Migrations
                     b.ToTable("Avatars", (string)null);
                 });
 
-            modelBuilder.Entity("DAL.Entities.Comment", b =>
-                {
-                    b.HasBaseType("DAL.Entities.Post");
-
-                    b.Property<Guid>("ParentPostId")
-                        .HasColumnType("uuid");
-
-                    b.HasIndex("ParentPostId");
-
-                    b.ToTable("Comments", (string)null);
-                });
-
             modelBuilder.Entity("DAL.Entities.PostPhoto", b =>
                 {
                     b.HasBaseType("DAL.Entities.Attach");
@@ -221,23 +208,6 @@ namespace API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DAL.Entities.Comment", b =>
-                {
-                    b.HasOne("DAL.Entities.Post", null)
-                        .WithOne()
-                        .HasForeignKey("DAL.Entities.Comment", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DAL.Entities.Post", "ParentPost")
-                        .WithMany("PostComments")
-                        .HasForeignKey("ParentPostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ParentPost");
-                });
-
             modelBuilder.Entity("DAL.Entities.PostPhoto", b =>
                 {
                     b.HasOne("DAL.Entities.Attach", null)
@@ -258,8 +228,6 @@ namespace API.Migrations
             modelBuilder.Entity("DAL.Entities.Post", b =>
                 {
                     b.Navigation("PostAttachments");
-
-                    b.Navigation("PostComments");
                 });
 
             modelBuilder.Entity("DAL.Entities.User", b =>

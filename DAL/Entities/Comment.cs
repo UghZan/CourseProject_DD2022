@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace DAL.Entities
 {
-    public class Avatar : Attach
+    public class Comment : Post
     {
-        public Guid UserId { get; set; }
-        public virtual User User { get; set; } = null!;
+        public virtual Post ParentPost { get; set; } = null!;
+        public Guid ParentPostId { get; set; }
     }
 }

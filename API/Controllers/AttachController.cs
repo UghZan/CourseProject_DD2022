@@ -20,11 +20,5 @@ namespace API.Controllers
         {
             return await _attachService.UploadMultipleFiles(files);
         }
-
-        [HttpPost]
-        private async Task<MetadataModel> UploadFile([FromForm] IFormFile file)
-        {
-            return await _attachService.UploadFile(file);
-        }
     }
 }

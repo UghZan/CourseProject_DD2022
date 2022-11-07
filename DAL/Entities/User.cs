@@ -14,7 +14,6 @@ namespace DAL.Entities
         public string PasswordHashed { get; set; } = null!;
         public DateTimeOffset CreateDate { get; set; }
 
-        public long? AvatarId { get; set; }
         public virtual Avatar? Avatar { get; set; }
         public virtual ICollection<UserSession>? Sessions { get; set; }
     }

@@ -14,7 +14,7 @@ namespace API.Services
             }
             return metaList;
         }
-        public async Task<MetadataModel> UploadFile(IFormFile file)
+        private async Task<MetadataModel> UploadFile(IFormFile file)
         {
             var tempPath = Path.GetTempPath();
             var metadata = new MetadataModel
