@@ -49,6 +49,33 @@ namespace API.Services
             return temp.Entity.Id;
         }
 
+        public async Task AddAvatarForUser(Guid userID, MetadataModel metadata, string pathToAvatar)
+        {
+            var user = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == userID);
+            if (user == null)
+                throw new Exception("User is not found");
+
+            var avatar = new Avatar
+            {
+                Author = user,
+                MimeType = metadata.MimeType,
+                FilePath = pathToAvatar,
+                Name = metadata.Name,
+                Size = metadata.FileSize,
+                User = user
+            };
+
+            user.Avatar = avatar;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<AttachModel> GetUserAvatar(Guid userId)
+        {
+            var user = await GetUserByID(userId);
+            var attach = _mapper.Map<AttachModel>(user.Avatar);
+            return attach;
+        }
+
         public async Task<List<UserModel>> GetUsers()
         {
             return await _context.Users.AsNoTracking().ProjectTo<UserModel>(_mapper.ConfigurationProvider).ToListAsync();
@@ -56,7 +83,7 @@ namespace API.Services
 
         private async Task<User> GetUserByID(Guid id)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+            var user = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
             {
                 throw new Exception("No user by this id found");
@@ -88,7 +115,7 @@ namespace API.Services
 
         private TokenModel GenerateToken(User user, UserSession session)
         {
-            if (session.User == null)
+            if (session.UserOfThisSession == null)
                 throw new Exception("Invalid session, has no user");
 
             var dtNow = DateTime.Now;

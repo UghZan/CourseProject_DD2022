@@ -14,6 +14,6 @@ namespace DAL.Entities
         public DateTimeOffset SessionCreatedTime { get; set; }
         public bool IsActive { get; set; } = true;
 
-        public virtual User? UserOfThisSession { get; set; }
+        public virtual User UserOfThisSession { get; set; } = null!;
     }
 }

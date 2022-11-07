@@ -13,6 +13,8 @@ namespace API
                 .ForMember(u => u.CreateDate, m => m.MapFrom(s => DateTime.UtcNow));
 
             CreateMap<DAL.Entities.User, Models.UserModel>();
+
+            CreateMap<DAL.Entities.Attach, Models.AttachModel>();
         }
     }
 }

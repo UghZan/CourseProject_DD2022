@@ -3,6 +3,7 @@ using System;
 using DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace API.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20221106161755_attaches")]
+    partial class attaches
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -61,9 +63,6 @@ namespace API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<long?>("AvatarId")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset>("CreateDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -80,9 +79,6 @@ namespace API.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AvatarId")
-                        .IsUnique();
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -118,13 +114,6 @@ namespace API.Migrations
                     b.ToTable("Sessions");
                 });
 
-            modelBuilder.Entity("DAL.Entities.Avatar", b =>
-                {
-                    b.HasBaseType("DAL.Entities.Attach");
-
-                    b.ToTable("Avatars", (string)null);
-                });
-
             modelBuilder.Entity("DAL.Entities.Attach", b =>
                 {
                     b.HasOne("DAL.Entities.User", "Author")
@@ -134,15 +123,6 @@ namespace API.Migrations
                         .IsRequired();
 
                     b.Navigation("Author");
-                });
-
-            modelBuilder.Entity("DAL.Entities.User", b =>
-                {
-                    b.HasOne("DAL.Entities.Avatar", "Avatar")
-                        .WithOne("User")
-                        .HasForeignKey("DAL.Entities.User", "AvatarId");
-
-                    b.Navigation("Avatar");
                 });
 
             modelBuilder.Entity("DAL.Entities.UserSession", b =>
@@ -156,24 +136,9 @@ namespace API.Migrations
                     b.Navigation("UserOfThisSession");
                 });
 
-            modelBuilder.Entity("DAL.Entities.Avatar", b =>
-                {
-                    b.HasOne("DAL.Entities.Attach", null)
-                        .WithOne()
-                        .HasForeignKey("DAL.Entities.Avatar", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("DAL.Entities.User", b =>
                 {
                     b.Navigation("Sessions");
-                });
-
-            modelBuilder.Entity("DAL.Entities.Avatar", b =>
-                {
-                    b.Navigation("User")
-                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

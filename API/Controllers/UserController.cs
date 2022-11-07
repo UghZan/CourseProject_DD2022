@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.IO;
 
 namespace API.Controllers
 {
@@ -31,6 +32,53 @@ namespace API.Controllers
             await _userService.CreateUser(model);
         }
 
+        [HttpPost]
+        [Authorize]
+        public async Task AddAvatarForUser(MetadataModel avatarMetadata)
+        {
+            var user = await GetCurrentUser();
+            var filePath = Path.Combine(Path.GetTempPath(), avatarMetadata.Id.ToString());
+
+            var file = new FileInfo(filePath);
+            if(!file.Exists)
+            {
+                throw new Exception("Requested avatar file doesn't exist");
+            }
+
+            var avatarPath = Path.Combine(Directory.GetCurrentDirectory(), "attaches", avatarMetadata.Id.ToString());
+            var avatarFileInfo = new FileInfo(avatarPath);
+            if(avatarFileInfo.Directory != null && !avatarFileInfo.Directory.Exists)
+            {
+                avatarFileInfo.Directory?.Create();
+            }
+
+            System.IO.File.Copy(file.FullName, avatarPath);
+
+            await _userService.AddAvatarForUser(user.Id, avatarMetadata, avatarPath);
+        }
+
+        [HttpGet]
+        public async Task<FileResult> GetUserAvatar(Guid userId)
+        {
+            var attach = await _userService.GetUserAvatar(userId);
+
+            return File(System.IO.File.ReadAllBytes(attach.FilePath), attach.MimeType);
+        }
+
+        [HttpGet]
+        public async Task<FileResult> DownloadAvatar(Guid userId)
+        {
+            var attach = await _userService.GetUserAvatar(userId);
+
+            HttpContext.Response.ContentType = attach.MimeType;
+            FileContentResult result = new FileContentResult(System.IO.File.ReadAllBytes(attach.FilePath), attach.MimeType)
+            {
+                FileDownloadName = attach.Name
+            };
+
+            return result;
+        }
+
         [HttpGet]
         [Authorize]
         public async Task<UserModel> GetCurrentUser()
@@ -40,8 +88,8 @@ namespace API.Controllers
             {
                 return await _userService.GetUserModelByID(userId);
             }
-
-            throw new Exception("You are not authorized");
+            else
+                throw new Exception("You are not authorized");
         }
 
         [HttpGet]
