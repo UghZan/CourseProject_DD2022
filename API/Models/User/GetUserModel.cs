@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace API.Models
+namespace API.Models.User
 {
-    public class UserModel
+    public class GetUserModel
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
@@ -10,10 +10,10 @@ namespace API.Models
         public DateTimeOffset CreateDate { get; set; }
     }
 
-    public class UserModelWithAvatar : UserModel
+    public class GetUserModelWithAvatar : GetUserModel
     {
         public string? LinkToAvatar { get; set; }
-        public UserModelWithAvatar(UserModel model, Func<UserModel, string?>? linkGenerator)
+        public GetUserModelWithAvatar(GetUserModel model, Func<GetUserModel, string?>? linkGenerator)
         {
             Id = model.Id;
             Name = model.Name;

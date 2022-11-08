@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
-namespace API.Models
+namespace API.Models.Attach
 {
     public class MetadataModel
     {

@@ -1,4 +1,4 @@
-﻿using API.Models;
+﻿using API.Models.Attach;
 using DAL;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Mail;

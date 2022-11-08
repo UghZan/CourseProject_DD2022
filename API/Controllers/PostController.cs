@@ -1,5 +1,8 @@
-﻿using API.Models;
+﻿using API.Models.Post;
+using API.Models.Post.Comment;
 using API.Services;
+using Common.Consts;
+using Common.Extensions;
 using DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,13 +32,13 @@ namespace API.Controllers
         [HttpPost]
         public async Task<Guid> CreatePost(CreatePostModel model)
         {
-            var userIdString = User.Claims.FirstOrDefault(x => x.Type == "userID").Value;
-            if (Guid.TryParse(userIdString, out Guid userId))
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
             {
-                return await _postService.CreatePost(userId, model);
-            }
-            else
                 throw new Exception("You are not authorized");
+            }
+            return await _postService.CreatePost(userId, model);
+
         }
 
         [HttpGet]
@@ -53,13 +56,12 @@ namespace API.Controllers
         [HttpPost]
         public async Task<Guid> CreateCommentOnPost(Guid postID, CreateCommentModel commentModel)
         {
-            var userIdString = User.Claims.FirstOrDefault(x => x.Type == "userID").Value;
-            if (Guid.TryParse(userIdString, out Guid userId))
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
             {
-                return await _postService.CreateCommentForPost(userId, postID, commentModel);
-            }
-            else
                 throw new Exception("You are not authorized");
+            }
+            return await _postService.CreateCommentForPost(userId, postID, commentModel);
         }
 
         [HttpGet]

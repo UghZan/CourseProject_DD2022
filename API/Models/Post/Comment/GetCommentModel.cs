@@ -1,9 +1,11 @@
-﻿namespace API.Models
+﻿using API.Models.User;
+
+namespace API.Models.Post.Comment
 {
     public class GetCommentModel
     {
         public string? PostContent { get; set; }
-        public UserModelWithAvatar Author { get; set; }
+        public GetUserModelWithAvatar Author { get; set; } = null!;
         public DateTimeOffset CreationDate { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using API.Configs;
-using API.Models;
+using API.Models.Attach;
+using API.Models.User;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Common;
@@ -18,12 +19,12 @@ namespace API.Services
         private readonly IMapper _mapper;
         private readonly DataContext _context;
         private readonly AttachService _attachService;
-        private Func<UserModel, string?>? _userAvatarLinkGenerator;
-        public void SetLinkGenerator(Func<UserModel, string?> linkGenerator)
+        private Func<GetUserModel, string?>? _userAvatarLinkGenerator;
+        public void SetLinkGenerator(Func<GetUserModel, string?> linkGenerator)
         {
             _userAvatarLinkGenerator = linkGenerator;
         }
-        public Func<UserModel, string?> GetLinkGenerator() => _userAvatarLinkGenerator;
+        public Func<GetUserModel, string?>? GetLinkGenerator() => _userAvatarLinkGenerator;
 
         public UserService(IMapper mapper, DataContext context, IOptions<AuthConfig> config, AttachService attachService)
         {
@@ -84,10 +85,10 @@ namespace API.Services
             return attach;
         }
 
-        public async Task<IEnumerable<UserModelWithAvatar>> GetUsers()
+        public async Task<IEnumerable<GetUserModelWithAvatar>> GetUsers()
         {
-            var users = await _context.Users.AsNoTracking().ProjectTo<UserModel>(_mapper.ConfigurationProvider).ToListAsync();
-            return users.Select(x => new UserModelWithAvatar(x, _userAvatarLinkGenerator));
+            var users = await _context.Users.AsNoTracking().ProjectTo<GetUserModel>(_mapper.ConfigurationProvider).ToListAsync();
+            return users.Select(x => new GetUserModelWithAvatar(x, _userAvatarLinkGenerator));
         }
 
         public async Task<User> GetUserByID(Guid id)
@@ -100,11 +101,11 @@ namespace API.Services
             return user;
         }
 
-        public async Task<UserModel> GetUserModelByID(Guid id)
+        public async Task<GetUserModel> GetUserModelByID(Guid id)
         {
             var user = await GetUserByID(id);
 
-            return _mapper.Map<UserModel>(user);
+            return _mapper.Map<GetUserModel>(user);
         }
 
         public void Dispose()

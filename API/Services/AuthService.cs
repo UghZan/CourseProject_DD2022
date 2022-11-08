@@ -1,7 +1,9 @@
 ﻿using API.Configs;
-using API.Models;
+using API.Models.Token;
 using AutoMapper;
 using Common;
+using Common.Consts;
+using Common.Extensions;
 using DAL;
 using DAL.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -49,8 +51,8 @@ namespace API.Services
             if (token is not JwtSecurityToken jwtToken || !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
                 throw new SecurityTokenException("Invalid token");
 
-            if (principal.Claims.FirstOrDefault(x => x.Type == "refreshTokenID").Value is string refreshTokenIdString &&
-                Guid.TryParse(refreshTokenIdString, out var refreshTokenID))
+            var refreshTokenID = principal.GetClaimValue<Guid>(ClaimNames.RefreshTokenId);
+            if (refreshTokenID != default)
             {
                 var session = await GetSessionByRefreshToken(refreshTokenID);
                 if (!session.IsActive)

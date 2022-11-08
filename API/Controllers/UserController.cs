@@ -1,7 +1,10 @@
-﻿using API.Models;
+﻿using API.Models.Attach;
+using API.Models.User;
 using API.Services;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Common.Consts;
+using Common.Extensions;
 using DAL;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -48,19 +51,18 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public async Task<UserModel> GetCurrentUser()
+        public async Task<GetUserModel> GetCurrentUser()
         {
-            var userIdString = User.Claims.FirstOrDefault(x => x.Type == "userID").Value;
-            if (Guid.TryParse(userIdString, out Guid userId))
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
             {
-                return await _userService.GetUserModelByID(userId);
-            }
-            else
                 throw new Exception("You are not authorized");
+            }
+            return await _userService.GetUserModelByID(userId);
         }
 
         [HttpGet]
-        public async Task<IEnumerable<UserModelWithAvatar>> GetUsers()
+        public async Task<IEnumerable<GetUserModelWithAvatar>> GetUsers()
         {
             return await _userService.GetUsers();
         }

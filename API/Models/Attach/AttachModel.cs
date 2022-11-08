@@ -1,4 +1,4 @@
-﻿namespace API.Models
+﻿namespace API.Models.Attach
 {
     public class AttachModel
     {

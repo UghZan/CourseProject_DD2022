@@ -1,6 +1,7 @@
-﻿using DAL.Entities;
+﻿using API.Models.Attach;
+using DAL.Entities;
 
-namespace API.Models
+namespace API.Models.Post
 {
     public class CreatePostModel
     {

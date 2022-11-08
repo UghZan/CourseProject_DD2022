@@ -1,4 +1,7 @@
-﻿using API.Models;
+﻿using API.Models.Attach;
+using API.Models.Post;
+using API.Models.Post.Comment;
+using API.Models.User;
 using AutoMapper;
 using DAL;
 using DAL.Entities;
@@ -16,13 +19,13 @@ namespace API.Services
         private readonly AttachService _attachService;
         private readonly DataContext _context;
         private Func<Guid, string?>? _postContentLinkGenerator;
-        private Func<UserModel, string?>? _userAvatarLinkGenerator;
+        private Func<GetUserModel, string?>? _userAvatarLinkGenerator;
 
         public void SetContentLinkGenerator(Func<Guid, string?>? linkGenerator)
         {
             _postContentLinkGenerator = linkGenerator;
         }
-        public void SetAvatarLinkGenerator(Func<UserModel, string?>? linkGenerator)
+        public void SetAvatarLinkGenerator(Func<GetUserModel, string?>? linkGenerator)
         {
             _userAvatarLinkGenerator = linkGenerator;
         }
@@ -92,7 +95,7 @@ namespace API.Services
             List<GetCommentModel> comments = new();
             foreach(Comment c in post.PostComments)
             {
-                var author = new UserModelWithAvatar(await _userService.GetUserModelByID(c.Author.Id), _userAvatarLinkGenerator);
+                var author = new GetUserModelWithAvatar(await _userService.GetUserModelByID(c.Author.Id), _userAvatarLinkGenerator);
                 var commenModel = _mapper.Map<GetCommentModel>(c);
                 commenModel.Author = author;
                 comments.Add(commenModel);
@@ -112,7 +115,7 @@ namespace API.Services
 
         private async Task<GetPostModel> PostToPostModel(Post p)
         {
-            var author = new UserModelWithAvatar(await _userService.GetUserModelByID(p.Author.Id), _userAvatarLinkGenerator);
+            var author = new GetUserModelWithAvatar(await _userService.GetUserModelByID(p.Author.Id), _userAvatarLinkGenerator);
 
             var postModel = new GetPostModel
             {
