@@ -9,18 +9,30 @@ namespace API.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
+        private readonly AuthService _authService;
         private readonly UserService _userService;
 
-        public AuthController(UserService userService)
+        public AuthController(AuthService authService, UserService userService)
         {
+            _authService = authService;
             _userService = userService;
         }
 
         [HttpPost]
-        public async Task<TokenModel> Token(TokenRequestModel requestModel) => await _userService.GetToken(requestModel.Login, requestModel.Password);
+        public async Task<TokenModel> Token(TokenRequestModel requestModel) => await _authService.GetToken(requestModel.Login, requestModel.Password);
 
         [HttpPost]
-        public async Task<TokenModel> RefreshToken(RefreshTokenRequestModel reqModel) => await _userService.GetTokenByRefreshToken(reqModel.Token);
-        
+        public async Task<TokenModel> RefreshToken(RefreshTokenRequestModel reqModel) => await _authService.GetTokenByRefreshToken(reqModel.Token);
+
+
+        [HttpPost]
+        public async Task<Guid> RegisterUser(CreateUserModel model)
+        {
+            if (await _userService.CheckIfUserExists(model.Email))
+            {
+                throw new Exception("User with this email already exists");
+            }
+            return await _userService.CreateUser(model);
+        }
     }
 }

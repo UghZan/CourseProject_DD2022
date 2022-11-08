@@ -8,13 +8,18 @@ namespace API.Models
         public string Name { get; set; } = null!;
         public string Email { get; set; } = null!;
         public DateTimeOffset CreateDate { get; set; }
+    }
 
-        public UserModel(Guid id, string name, string email, DateTimeOffset createDate)
+    public class UserModelWithAvatar : UserModel
+    {
+        public string? LinkToAvatar { get; set; }
+        public UserModelWithAvatar(UserModel model, Func<UserModel, string?>? linkGenerator)
         {
-            Id = id;
-            Name = name;
-            Email = email;
-            CreateDate = createDate;
+            Id = model.Id;
+            Name = model.Name;
+            Email = model.Email;
+            CreateDate = model.CreateDate;
+            LinkToAvatar = linkGenerator?.Invoke(model);
         }
     }
 }

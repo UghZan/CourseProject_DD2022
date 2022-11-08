@@ -1,5 +1,6 @@
 ﻿using API.Models;
 using API.Services;
+using DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Sockets;
@@ -9,18 +10,23 @@ namespace API.Controllers
 {
     [Route("api/[controller]/[action]")]
     [ApiController]
+    [Authorize]
     public class PostController : Controller
     {
         private readonly PostService _postService;
-        private readonly UserService _userService;
-        public PostController(PostService postService, UserService userService)
+        public PostController(PostService postService)
         {
             _postService = postService;
-            _userService = userService;
+            if (postService != null)
+            {
+                postService.SetContentLinkGenerator(x =>
+                Url.Action(nameof(GetPostPhotoByID), new { photoID = x }));
+                postService.SetAvatarLinkGenerator(x =>
+                Url.Action(nameof(UserController.GetUserAvatar), "User", new { userId = x.Id, download = false }));
+            }
         }
 
         [HttpPost]
-        [Authorize]
         public async Task<Guid> CreatePost(CreatePostModel model)
         {
             var userIdString = User.Claims.FirstOrDefault(x => x.Type == "userID").Value;
@@ -35,20 +41,16 @@ namespace API.Controllers
         [HttpGet]
         public async Task<GetPostModel> GetPost(Guid postID)
         {
-            var postModel = await _postService.GetPostByID(postID);
-            if (postModel.PostAttachments != null)
-            {
-                //get URL of method that shows photos and build a link for current photo attachment
-                foreach (PostPhotoModel attachId in postModel.PostAttachments)
-                {
-                    attachId.URL = Url.Action("GetPostPhotoByID", new {photoID = attachId.AttachId});
-                }
-            }
-            return postModel;
+            return await _postService.GetPostByID(postID);
+        }
+
+        [HttpGet]
+        public async Task<IEnumerable<GetPostModel>> GetUserPosts(Guid userId, int amount = 5, int startingFrom = 0)
+        {
+            return await _postService.GetPostsByUser(userId, amount, startingFrom);
         }
 
         [HttpPost]
-        [Authorize]
         public async Task<Guid> CreateCommentOnPost(Guid postID, CreateCommentModel commentModel)
         {
             var userIdString = User.Claims.FirstOrDefault(x => x.Type == "userID").Value;
@@ -61,17 +63,21 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public async Task<List<GetCommentModel>> GetPostComments(Guid postID)
+        public async Task<IEnumerable<GetCommentModel>> GetPostComments(Guid postID)
         {
             return await _postService.GetCommentsForPost(postID);
         }
 
         [HttpGet]
-        public async Task<FileResult> GetPostPhotoByID(Guid photoID)
+        [AllowAnonymous]
+        public async Task<FileResult> GetPostPhotoByID(Guid photoID, bool download = false)
         {
             var attach = await _postService.GetPostAttachByID(photoID);
-
-            return File(System.IO.File.ReadAllBytes(attach.FilePath), attach.MimeType);
+            var fs = new FileStream(attach.FilePath, FileMode.Open);
+            if (download)
+                return File(fs, attach.MimeType, attach.Name);
+            else
+                return File(fs, attach.MimeType);
         }
     }
 }

@@ -13,6 +13,7 @@ namespace API.Controllers
 {
     [Route("api/[controller]/[action]")]
     [ApiController]
+    [Authorize]
     public class UserController : ControllerBase
     {
         private readonly UserService _userService;
@@ -20,20 +21,12 @@ namespace API.Controllers
         public UserController(UserService userService)
         {
             _userService = userService;
+            if (userService != null)
+                _userService.SetLinkGenerator(x =>
+                Url.Action(nameof(GetUserAvatar), new { userId = x.Id, download = false }));
         }
 
         [HttpPost]
-        public async Task CreateUser(CreateUserModel model)
-        {
-            if(await _userService.CheckIfUserExists(model.Email))
-            {
-                throw new Exception("User with this email already exists");
-            }
-            await _userService.CreateUser(model);
-        }
-
-        [HttpPost]
-        [Authorize]
         public async Task AddAvatarForUser(MetadataModel avatarMetadata)
         {
             var user = await GetCurrentUser();
@@ -42,33 +35,23 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public async Task<FileResult> GetUserAvatar(Guid userId)
+        [AllowAnonymous]
+        public async Task<FileStreamResult> GetUserAvatar(Guid userId, bool download = false)
         {
             var attach = await _userService.GetUserAvatar(userId);
+            var fs = new FileStream(attach.FilePath, FileMode.Open);
+            if (download)
+                return File(fs, attach.MimeType, attach.Name);
+            else
+                return File(fs, attach.MimeType);
 
-            return File(System.IO.File.ReadAllBytes(attach.FilePath), attach.MimeType);
         }
 
         [HttpGet]
-        public async Task<FileResult> DownloadAvatar(Guid userId)
-        {
-            var attach = await _userService.GetUserAvatar(userId);
-
-            HttpContext.Response.ContentType = attach.MimeType;
-            FileContentResult result = new FileContentResult(System.IO.File.ReadAllBytes(attach.FilePath), attach.MimeType)
-            {
-                FileDownloadName = attach.Name
-            };
-
-            return result;
-        }
-
-        [HttpGet]
-        [Authorize]
         public async Task<UserModel> GetCurrentUser()
         {
             var userIdString = User.Claims.FirstOrDefault(x => x.Type == "userID").Value;
-            if(Guid.TryParse(userIdString, out Guid userId))
+            if (Guid.TryParse(userIdString, out Guid userId))
             {
                 return await _userService.GetUserModelByID(userId);
             }
@@ -77,8 +60,7 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        [Authorize]
-        public async Task<List<UserModel>> GetUsers()
+        public async Task<IEnumerable<UserModelWithAvatar>> GetUsers()
         {
             return await _userService.GetUsers();
         }
