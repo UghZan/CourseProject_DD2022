@@ -12,32 +12,15 @@ namespace API.Services
     {
         private readonly IMapper _mapper;
         private readonly UserService _userService;
+        private readonly AttachService _attachService;
         private readonly DataContext _context;
 
-        public PostService(IMapper mapper, DataContext context, UserService userService)
+        public PostService(IMapper mapper, DataContext context, UserService userService, AttachService attachService)
         {
             _mapper = mapper;
             _context = context;
             _userService = userService;
-        }
-        private async Task<string> UploadAttachment(MetadataModel attachment)
-        {
-            string pathToAttachment = Path.Combine(Path.GetTempPath(), attachment.Id.ToString());
-            var file = new FileInfo(pathToAttachment);
-            if (!file.Exists)
-            {
-                throw new Exception("Requested attachment file doesn't exist");
-            }
-            var avatarPath = Path.Combine(Directory.GetCurrentDirectory(), "attaches", attachment.Id.ToString());
-            var avatarFileInfo = new FileInfo(avatarPath);
-            if (avatarFileInfo.Directory != null && !avatarFileInfo.Directory.Exists)
-            {
-                avatarFileInfo.Directory?.Create();
-            }
-
-            System.IO.File.Copy(file.FullName, avatarPath);
-
-            return pathToAttachment;
+            _attachService = attachService;
         }
 
         public async Task<Guid> CreatePost(Guid userID, CreatePostModel createPostModel)
@@ -56,7 +39,7 @@ namespace API.Services
             {
                 foreach (MetadataModel attachment in createPostModel.PostAttachments)
                 {
-                    var pathToAttachment = await UploadAttachment(attachment);
+                    var pathToAttachment = _attachService.UploadAttachToPermanentStorage(attachment);
                     var attach = new PostPhoto
                     {
                         Author = user,
@@ -74,7 +57,7 @@ namespace API.Services
             return newPost.Id;
         }
 
-        public async Task<Guid> CreateCommentForPost(Guid userID, Guid postID, CreatePostModel commentModel)
+        public async Task<Guid> CreateCommentForPost(Guid userID, Guid postID, CreateCommentModel commentModel)
         {
             var user = await _userService.GetUserByID(userID);
             var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postID);
@@ -88,8 +71,6 @@ namespace API.Services
                 Author = user,
                 PostContent = commentModel.PostContent,
                 CreationDate = DateTime.UtcNow,
-                PostAttachments = new List<PostPhoto>(),
-                PostComments = new List<Comment>(),
                 ParentPost = post
             };
             await _context.Comments.AddAsync(newComment);
@@ -114,14 +95,15 @@ namespace API.Services
         }
         private async Task<GetCommentModel> GetCommentModelById(Guid parentPostID, Guid commentID)
         {
-            GetPostModel postModel = await GetPostByID(commentID);
+            var originalComment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == commentID);
+            if (originalComment == null)
+                throw new Exception("No comment by that ID found");
+
             GetCommentModel commentModel = new GetCommentModel
             {
-                PostContent = postModel.PostContent,
-                AuthorId = postModel.AuthorId,
-                CreationDate = postModel.CreationDate,
-                PostAttachments = postModel.PostAttachments,
-                PostId = parentPostID
+                PostContent = originalComment.PostContent,
+                AuthorId = originalComment.AuthorId,
+                CreationDate = originalComment.CreationDate,
             };
             return commentModel;
                  
@@ -139,17 +121,21 @@ namespace API.Services
                 PostContent = post.PostContent,
                 AuthorId = post.AuthorId,
                 CreationDate = post.CreationDate,
-                PostAttachments = new List<string>()
+                PostAttachments = new List<PostPhotoModel>()
             };
             if (post.PostAttachments != null)
                 foreach (PostPhoto attach in post.PostAttachments)
                 {
-                    postModel.PostAttachments.Add(attach.Id.ToString());
+                    postModel.PostAttachments.Add(new PostPhotoModel
+                    {
+                        MimeType = attach.MimeType,
+                        AttachId = attach.Id
+                    });
                 }
             return postModel;
         }
 
-        public async Task<AttachModel> GetPostAttachByID(long photoID)
+        public async Task<AttachModel> GetPostAttachByID(Guid photoID)
         {
             var attach = await _context.PostPhotos.FirstOrDefaultAsync(p => p.Id == photoID);
             if (attach == null)

@@ -18,12 +18,14 @@ namespace API.Services
         private readonly IMapper _mapper;
         private readonly DataContext _context;
         private readonly AuthConfig _config;
+        private readonly AttachService _attachService;
 
-        public UserService(IMapper mapper, DataContext context, IOptions<AuthConfig> config)
+        public UserService(IMapper mapper, DataContext context, IOptions<AuthConfig> config, AttachService attachService)
         {
             _mapper = mapper;
             _context = context;
             _config = config.Value;
+            _attachService = attachService;
         }
 
         public async Task<bool> CheckIfUserExists(string email)
@@ -49,17 +51,19 @@ namespace API.Services
             return temp.Entity.Id;
         }
 
-        public async Task AddAvatarForUser(Guid userID, MetadataModel metadata, string pathToAvatar)
+        public async Task AddAvatarForUser(Guid userID, MetadataModel metadata)
         {
             var user = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == userID);
             if (user == null)
                 throw new Exception("User is not found");
 
+            var filePath = _attachService.UploadAttachToPermanentStorage(metadata);
+
             var avatar = new Avatar
             {
                 Author = user,
                 MimeType = metadata.MimeType,
-                FilePath = pathToAvatar,
+                FilePath = filePath,
                 Name = metadata.Name,
                 Size = metadata.FileSize,
                 User = user

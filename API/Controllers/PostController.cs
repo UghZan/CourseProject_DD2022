@@ -39,19 +39,17 @@ namespace API.Controllers
             if (postModel.PostAttachments != null)
             {
                 //get URL of method that shows photos and build a link for current photo attachment
-                var formattedAttachmentsID = new List<string>();
-                foreach (string attachId in postModel.PostAttachments)
+                foreach (PostPhotoModel attachId in postModel.PostAttachments)
                 {
-                    formattedAttachmentsID.Add(Url.Action("GetPostPhotoByID", "Post", new { photoID = long.Parse(attachId)}, Request.Scheme));
+                    attachId.URL = Url.Action("GetPostPhotoByID", new {photoID = attachId.AttachId});
                 }
-                postModel.PostAttachments = formattedAttachmentsID;
             }
             return postModel;
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<Guid> CreateCommentOnPost(Guid postID, CreatePostModel commentModel)
+        public async Task<Guid> CreateCommentOnPost(Guid postID, CreateCommentModel commentModel)
         {
             var userIdString = User.Claims.FirstOrDefault(x => x.Type == "userID").Value;
             if (Guid.TryParse(userIdString, out Guid userId))
@@ -69,7 +67,7 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public async Task<FileResult> GetPostPhotoByID(long photoID)
+        public async Task<FileResult> GetPostPhotoByID(Guid photoID)
         {
             var attach = await _postService.GetPostAttachByID(photoID);
 

@@ -1,10 +1,19 @@
 ﻿using API.Models;
+using DAL;
 using Microsoft.AspNetCore.Mvc;
+using System.Net.Mail;
 
 namespace API.Services
 {
     public class AttachService
     {
+        private readonly DataContext _context;
+
+        public AttachService(DataContext context)
+        {
+            _context = context;
+        }
+
         public async Task<List<MetadataModel>> UploadMultipleFiles(ICollection<IFormFile> files)
         {
             var metaList = new List<MetadataModel>();
@@ -30,7 +39,7 @@ namespace API.Services
             var fileInfo = new FileInfo(newPath);
             if (fileInfo.Exists)
             {
-                throw new Exception("Such file already exists (for some reason)");
+                throw new Exception("Such file already exists");
             }
             else
             {
@@ -51,6 +60,34 @@ namespace API.Services
             return metadata;
         }
     
+        public string UploadAttachToPermanentStorage(MetadataModel attachmentMetadata)
+        {
+            string pathToAttachment = Path.Combine(Path.GetTempPath(), attachmentMetadata.Id.ToString());
 
+            //first, check if file with such metadata is already in the DB
+            var attach = _context.Attaches.FirstOrDefault(a => a.Id == attachmentMetadata.Id);
+            if(attach != null)
+            {
+                return attach.FilePath;
+            }
+
+            var file = new FileInfo(pathToAttachment);
+            if (!file.Exists)
+            {
+                throw new Exception("Requested attachment file doesn't exist");
+            }
+
+            var permanentAttachPath = Path.Combine(Directory.GetCurrentDirectory(), "attaches", attachmentMetadata.Id.ToString());
+            var permanentAttachFileInfo = new FileInfo(permanentAttachPath);
+
+            if (permanentAttachFileInfo.Directory != null && !permanentAttachFileInfo.Directory.Exists)
+            {
+                permanentAttachFileInfo.Directory?.Create();
+            }
+
+            System.IO.File.Copy(file.FullName, permanentAttachPath);
+
+            return pathToAttachment;
+        }
     }
 }

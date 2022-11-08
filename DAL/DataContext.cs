@@ -27,7 +27,6 @@ namespace DAL
             //Table-Per-Type
             modelBuilder.Entity<Avatar>().ToTable(nameof(Avatars));
             modelBuilder.Entity<PostPhoto>().ToTable(nameof(PostPhotos));
-            modelBuilder.Entity<Comment>().ToTable(nameof(Comments));
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder builder) => builder.UseNpgsql(b => b.MigrationsAssembly("API"));

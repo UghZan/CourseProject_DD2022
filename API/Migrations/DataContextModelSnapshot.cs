@@ -24,11 +24,9 @@ namespace API.Migrations
 
             modelBuilder.Entity("DAL.Entities.Attach", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("AuthorId")
                         .HasColumnType("uuid");
@@ -53,6 +51,33 @@ namespace API.Migrations
                     b.HasIndex("AuthorId");
 
                     b.ToTable("Attaches");
+                });
+
+            modelBuilder.Entity("DAL.Entities.Comment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ParentPostId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PostContent")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("ParentPostId");
+
+                    b.ToTable("Comments");
                 });
 
             modelBuilder.Entity("DAL.Entities.Post", b =>
@@ -147,18 +172,6 @@ namespace API.Migrations
                     b.ToTable("Avatars", (string)null);
                 });
 
-            modelBuilder.Entity("DAL.Entities.Comment", b =>
-                {
-                    b.HasBaseType("DAL.Entities.Post");
-
-                    b.Property<Guid>("ParentPostId")
-                        .HasColumnType("uuid");
-
-                    b.HasIndex("ParentPostId");
-
-                    b.ToTable("Comments", (string)null);
-                });
-
             modelBuilder.Entity("DAL.Entities.PostPhoto", b =>
                 {
                     b.HasBaseType("DAL.Entities.Attach");
@@ -180,6 +193,25 @@ namespace API.Migrations
                         .IsRequired();
 
                     b.Navigation("Author");
+                });
+
+            modelBuilder.Entity("DAL.Entities.Comment", b =>
+                {
+                    b.HasOne("DAL.Entities.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DAL.Entities.Post", "ParentPost")
+                        .WithMany("PostComments")
+                        .HasForeignKey("ParentPostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("ParentPost");
                 });
 
             modelBuilder.Entity("DAL.Entities.Post", b =>
@@ -219,23 +251,6 @@ namespace API.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("DAL.Entities.Comment", b =>
-                {
-                    b.HasOne("DAL.Entities.Post", null)
-                        .WithOne()
-                        .HasForeignKey("DAL.Entities.Comment", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DAL.Entities.Post", "ParentPost")
-                        .WithMany("PostComments")
-                        .HasForeignKey("ParentPostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ParentPost");
                 });
 
             modelBuilder.Entity("DAL.Entities.PostPhoto", b =>

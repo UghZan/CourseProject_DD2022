@@ -37,24 +37,8 @@ namespace API.Controllers
         public async Task AddAvatarForUser(MetadataModel avatarMetadata)
         {
             var user = await GetCurrentUser();
-            var filePath = Path.Combine(Path.GetTempPath(), avatarMetadata.Id.ToString());
 
-            var file = new FileInfo(filePath);
-            if(!file.Exists)
-            {
-                throw new Exception("Requested avatar file doesn't exist");
-            }
-
-            var avatarPath = Path.Combine(Directory.GetCurrentDirectory(), "attaches", avatarMetadata.Id.ToString());
-            var avatarFileInfo = new FileInfo(avatarPath);
-            if(avatarFileInfo.Directory != null && !avatarFileInfo.Directory.Exists)
-            {
-                avatarFileInfo.Directory?.Create();
-            }
-
-            System.IO.File.Copy(file.FullName, avatarPath);
-
-            await _userService.AddAvatarForUser(user.Id, avatarMetadata, avatarPath);
+            await _userService.AddAvatarForUser(user.Id, avatarMetadata);
         }
 
         [HttpGet]

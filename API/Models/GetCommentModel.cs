@@ -1,7 +1,9 @@
 ﻿namespace API.Models
 {
-    public class GetCommentModel : GetPostModel
+    public class GetCommentModel
     {
-        public Guid PostId { get; set; }
+        public string? PostContent { get; set; }
+        public Guid AuthorId { get; set; }
+        public DateTimeOffset CreationDate { get; set; }
     }
 }
