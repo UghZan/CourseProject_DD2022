@@ -19,18 +19,14 @@ namespace API.Services
         private readonly IMapper _mapper;
         private readonly DataContext _context;
         private readonly AttachService _attachService;
-        private Func<GetUserModel, string?>? _userAvatarLinkGenerator;
-        public void SetLinkGenerator(Func<GetUserModel, string?> linkGenerator)
-        {
-            _userAvatarLinkGenerator = linkGenerator;
-        }
-        public Func<GetUserModel, string?>? GetLinkGenerator() => _userAvatarLinkGenerator;
+        private readonly LinkProviderService _linkService;
 
-        public UserService(IMapper mapper, DataContext context, IOptions<AuthConfig> config, AttachService attachService)
+        public UserService(IMapper mapper, DataContext context, IOptions<AuthConfig> config, AttachService attachService, LinkProviderService linkProviderService)
         {
             _mapper = mapper;
             _context = context;
             _attachService = attachService;
+            _linkService = linkProviderService;
         }
 
         public async Task<bool> CheckIfUserExists(string email)
@@ -70,7 +66,7 @@ namespace API.Services
                 MimeType = metadata.MimeType,
                 FilePath = filePath,
                 Name = metadata.Name,
-                Size = metadata.FileSize,
+                Size = metadata.Size,
                 User = user
             };
 
@@ -87,8 +83,8 @@ namespace API.Services
 
         public async Task<IEnumerable<GetUserModelWithAvatar>> GetUsers()
         {
-            var users = await _context.Users.AsNoTracking().ProjectTo<GetUserModel>(_mapper.ConfigurationProvider).ToListAsync();
-            return users.Select(x => new GetUserModelWithAvatar(x, _userAvatarLinkGenerator));
+            var users = await _context.Users.AsNoTracking().ProjectTo<GetUserModelWithAvatar>(_mapper.ConfigurationProvider).ToListAsync();
+            return users;
         }
 
         public async Task<User> GetUserByID(Guid id)
@@ -106,6 +102,13 @@ namespace API.Services
             var user = await GetUserByID(id);
 
             return _mapper.Map<GetUserModel>(user);
+        }
+
+        public async Task<GetUserModelWithAvatar> GetUserModelWithAvatarByID(Guid id)
+        {
+            var user = await GetUserByID(id);
+
+            return _mapper.Map<GetUserModelWithAvatar>(user);
         }
 
         public void Dispose()

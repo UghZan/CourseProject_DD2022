@@ -13,13 +13,5 @@ namespace API.Models.User
     public class GetUserModelWithAvatar : GetUserModel
     {
         public string? LinkToAvatar { get; set; }
-        public GetUserModelWithAvatar(GetUserModel model, Func<GetUserModel, string?>? linkGenerator)
-        {
-            Id = model.Id;
-            Name = model.Name;
-            Email = model.Email;
-            CreateDate = model.CreateDate;
-            LinkToAvatar = linkGenerator?.Invoke(model);
-        }
     }
 }

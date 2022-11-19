@@ -31,7 +31,7 @@ namespace API.Services
                 Id = Guid.NewGuid(),
                 Name = file.FileName,
                 MimeType = file.ContentType,
-                FileSize = file.Length,
+                Size = file.Length,
             };
 
             var newPath = Path.Combine(tempPath, metadata.Id.ToString());
@@ -87,7 +87,7 @@ namespace API.Services
 
             System.IO.File.Copy(file.FullName, permanentAttachPath);
 
-            return pathToAttachment;
+            return permanentAttachPath;
         }
     }
 }

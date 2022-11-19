@@ -18,24 +18,16 @@ namespace API.Services
         private readonly UserService _userService;
         private readonly AttachService _attachService;
         private readonly DataContext _context;
-        private Func<Guid, string?>? _postContentLinkGenerator;
-        private Func<GetUserModel, string?>? _userAvatarLinkGenerator;
+        private readonly LinkProviderService _linkService;
 
-        public void SetContentLinkGenerator(Func<Guid, string?>? linkGenerator)
-        {
-            _postContentLinkGenerator = linkGenerator;
-        }
-        public void SetAvatarLinkGenerator(Func<GetUserModel, string?>? linkGenerator)
-        {
-            _userAvatarLinkGenerator = linkGenerator;
-        }
 
-        public PostService(IMapper mapper, DataContext context, UserService userService, AttachService attachService)
+        public PostService(IMapper mapper, DataContext context, UserService userService, AttachService attachService, LinkProviderService linkService)
         {
             _mapper = mapper;
             _context = context;
             _userService = userService;
             _attachService = attachService;
+            _linkService = linkService;
         }
 
         public async Task<Guid> CreatePost(Guid userID, CreatePostModel createPostModel)
@@ -50,16 +42,11 @@ namespace API.Services
                 foreach (MetadataModel attachment in createPostModel.PostAttachments)
                 {
                     var pathToAttachment = _attachService.UploadAttachToPermanentStorage(attachment);
-                    newPost.PostAttachments.Add(new PostPhoto
-                    {
-                        Author = user,
-                        MimeType = attachment.MimeType,
-                        FilePath = pathToAttachment,
-                        Name = attachment.Name,
-                        Size = attachment.FileSize,
-                        Post = newPost
-                    }
-                    );
+                    var postPhoto = _mapper.Map<PostPhoto>(attachment);
+                    postPhoto.FilePath = pathToAttachment;
+                    postPhoto.Post = newPost;
+                    postPhoto.Author = user;
+                    newPost.PostAttachments.Add(postPhoto);
                 }
             }
             await _context.Posts.AddAsync(newPost);
@@ -86,57 +73,35 @@ namespace API.Services
         }
         public async Task<IEnumerable<GetCommentModel>> GetCommentsForPost(Guid postID)
         {
-            var post = await _context.Posts.Include(x => x.PostComments).ThenInclude(c => c.Author).FirstOrDefaultAsync(p => p.Id == postID);
+            var post = await _context.Posts.Include(x => x.PostComments).ThenInclude(c => c.Author).ThenInclude(a => a.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
             if (post == null)
             {
                 throw new Exception("No such post found");
             }
 
-            List<GetCommentModel> comments = new();
-            foreach(Comment c in post.PostComments)
-            {
-                var author = new GetUserModelWithAvatar(await _userService.GetUserModelByID(c.Author.Id), _userAvatarLinkGenerator);
-                var commenModel = _mapper.Map<GetCommentModel>(c);
-                commenModel.Author = author;
-                comments.Add(commenModel);
-            }
-            return comments;
+            return post.PostComments.Select(c => _mapper.Map<GetCommentModel>(c));
         }
 
         public async Task<GetPostModel> GetPostByID(Guid postID)
         {
-            var post = await _context.Posts.Include(p => p.PostAttachments).Include(p => p.Author).FirstOrDefaultAsync(p => p.Id == postID);
+            var post = await _context.Posts.Include(p => p.PostAttachments).Include(p => p.Author).ThenInclude(u => u.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
             if (post == null)
             {
                 throw new Exception("Post not found");
             }
-            return await PostToPostModel(post);
-        }
-
-        private async Task<GetPostModel> PostToPostModel(Post p)
-        {
-            var author = new GetUserModelWithAvatar(await _userService.GetUserModelByID(p.Author.Id), _userAvatarLinkGenerator);
-
-            var postModel = new GetPostModel
-            {
-                PostContent = p.PostContent,
-                Author = author,
-                CreationDate = p.CreationDate,
-                PostAttachments = p.PostAttachments.Select(
-                    p => new GetPostPhotoModel(p, _postContentLinkGenerator)).ToArray()
-            };
-            return postModel;
+            return _mapper.Map<GetPostModel>(post);
         }
 
         public async Task<IEnumerable<GetPostModel>> GetPostsByUser(Guid userID, int amount, int startingFrom)
         {
             var posts = await _context.Posts
                 .Include(x => x.Author).ThenInclude(x => x.Avatar)
-                .Include(x => x.PostAttachments).AsNoTracking().Where(x => x.AuthorId == userID).Take(amount).Skip(startingFrom).ToListAsync();
+                .Include(x => x.PostAttachments).AsNoTracking().OrderByDescending(x => x.CreationDate).Where(x => x.AuthorId == userID)
+                .Take(amount).Skip(startingFrom).ToListAsync();
             List<GetPostModel> userPosts = new List<GetPostModel>();
             foreach(Post p in posts)
             {
-                userPosts.Add(await PostToPostModel(p));
+                userPosts.Add(_mapper.Map<GetPostModel>(p));
             }
             return userPosts;
             

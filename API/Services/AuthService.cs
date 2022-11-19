@@ -51,8 +51,8 @@ namespace API.Services
             if (token is not JwtSecurityToken jwtToken || !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
                 throw new SecurityTokenException("Invalid token");
 
-            var refreshTokenID = principal.GetClaimValue<Guid>(ClaimNames.RefreshTokenId);
-            if (refreshTokenID != default)
+            if (principal.Claims.FirstOrDefault(x => x.Type == "refreshTokenID")?.Value is String refreshIdString
+                && Guid.TryParse(refreshIdString, out var refreshTokenID))
             {
                 var session = await GetSessionByRefreshToken(refreshTokenID);
                 if (!session.IsActive)
@@ -63,12 +63,12 @@ namespace API.Services
 
                 session.RefreshTokenId = Guid.NewGuid();
                 await _context.SaveChangesAsync();
-                return GenerateToken(user, session);
+                return GenerateToken(session);
             }
             throw new Exception("Invalid user");
         }
 
-        private TokenModel GenerateToken(User user, UserSession session)
+        private TokenModel GenerateToken(UserSession session)
         {
             if (session.UserOfThisSession == null)
                 throw new Exception("Invalid session, has no user");
@@ -79,8 +79,8 @@ namespace API.Services
                 audience: _config.Audience,
                 claims: new Claim[]
             {
-                new Claim(ClaimsIdentity.DefaultNameClaimType, user.Name),
-                new Claim("userID", user.Id.ToString()),
+                new Claim(ClaimsIdentity.DefaultNameClaimType, session.UserOfThisSession.Name),
+                new Claim("userID", session.UserOfThisSession.Id.ToString()),
                 new Claim("sessionID", session.Id.ToString()),
             },
                 notBefore: dtNow,
@@ -142,7 +142,7 @@ namespace API.Services
             });
             await _context.SaveChangesAsync();
 
-            return GenerateToken(user, session.Entity);
+            return GenerateToken(session.Entity);
 
         }
     }

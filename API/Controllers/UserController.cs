@@ -5,7 +5,9 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Common.Consts;
 using Common.Extensions;
+using Common.Extentions;
 using DAL;
+using DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,16 +19,19 @@ namespace API.Controllers
     [Route("api/[controller]/[action]")]
     [ApiController]
     [Authorize]
+    [ApiExplorerSettings(GroupName = "API")]
     public class UserController : ControllerBase
     {
         private readonly UserService _userService;
 
-        public UserController(UserService userService)
+        public UserController(UserService userService, LinkProviderService linkProviderService)
         {
             _userService = userService;
-            if (userService != null)
-                _userService.SetLinkGenerator(x =>
-                Url.Action(nameof(GetUserAvatar), new { userId = x.Id, download = false }));
+
+            linkProviderService.UserAvatarLinkGenerator = x => Url.ControllerAction<AttachController>(nameof(AttachController.GetUserAvatar), new
+            {
+                userId = x,
+            });
         }
 
         [HttpPost]
@@ -38,27 +43,14 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]
-        public async Task<FileStreamResult> GetUserAvatar(Guid userId, bool download = false)
-        {
-            var attach = await _userService.GetUserAvatar(userId);
-            var fs = new FileStream(attach.FilePath, FileMode.Open);
-            if (download)
-                return File(fs, attach.MimeType, attach.Name);
-            else
-                return File(fs, attach.MimeType);
-
-        }
-
-        [HttpGet]
-        public async Task<GetUserModel> GetCurrentUser()
+        public async Task<GetUserModelWithAvatar> GetCurrentUser()
         {
             var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
             if (userId.Equals(default))
             {
                 throw new Exception("You are not authorized");
             }
-            return await _userService.GetUserModelByID(userId);
+            return await _userService.GetUserModelWithAvatarByID(userId);
         }
 
         [HttpGet]

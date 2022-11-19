@@ -1,5 +1,6 @@
 using API;
 using API.Configs;
+using API.Mapper;
 using API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -49,6 +50,9 @@ internal class Program
     new List<string>()
     }
         });
+
+            c.SwaggerDoc("Auth", new OpenApiInfo { Title = "Auth" });
+            c.SwaggerDoc("API", new OpenApiInfo { Title = "API" });
         });
 
         builder.Services.AddDbContext<DAL.DataContext>(options =>
@@ -62,6 +66,7 @@ internal class Program
         builder.Services.AddScoped<AttachService>();
         builder.Services.AddScoped<PostService>();
         builder.Services.AddScoped<AuthService>();
+        builder.Services.AddScoped<LinkProviderService>();
 
         builder.Services.AddAuthentication(o =>
         {
@@ -106,7 +111,11 @@ internal class Program
         //if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
-            app.UseSwaggerUI();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("API/swagger.json", "API");
+                c.SwaggerEndpoint("Auth/swagger.json", "Auth");
+            });
         }
 
         app.UseHttpsRedirection();

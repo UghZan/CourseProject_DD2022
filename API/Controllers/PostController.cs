@@ -3,6 +3,7 @@ using API.Models.Post.Comment;
 using API.Services;
 using Common.Consts;
 using Common.Extensions;
+using Common.Extentions;
 using DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,19 +15,23 @@ namespace API.Controllers
     [Route("api/[controller]/[action]")]
     [ApiController]
     [Authorize]
+    [ApiExplorerSettings(GroupName = "API")]
     public class PostController : Controller
     {
         private readonly PostService _postService;
-        public PostController(PostService postService)
+
+        public PostController(PostService postService, LinkProviderService linkProviderService)
         {
             _postService = postService;
-            if (postService != null)
+
+            linkProviderService.UserAvatarLinkGenerator = x => Url.ControllerAction<AttachController>(nameof(AttachController.GetUserAvatar), new
             {
-                postService.SetContentLinkGenerator(x =>
-                Url.Action(nameof(GetPostPhotoByID), new { photoID = x }));
-                postService.SetAvatarLinkGenerator(x =>
-                Url.Action(nameof(UserController.GetUserAvatar), "User", new { userId = x.Id, download = false }));
-            }
+                userId = x,
+            });
+            linkProviderService.PostContentLinkGenerator = x => Url.ControllerAction<AttachController>(nameof(AttachController.GetPostPhotoByID), new
+            {
+                photoId = x,
+            });
         }
 
         [HttpPost]
@@ -68,18 +73,6 @@ namespace API.Controllers
         public async Task<IEnumerable<GetCommentModel>> GetPostComments(Guid postID)
         {
             return await _postService.GetCommentsForPost(postID);
-        }
-
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<FileResult> GetPostPhotoByID(Guid photoID, bool download = false)
-        {
-            var attach = await _postService.GetPostAttachByID(photoID);
-            var fs = new FileStream(attach.FilePath, FileMode.Open);
-            if (download)
-                return File(fs, attach.MimeType, attach.Name);
-            else
-                return File(fs, attach.MimeType);
         }
     }
 }
