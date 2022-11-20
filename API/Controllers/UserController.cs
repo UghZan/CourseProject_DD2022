@@ -48,7 +48,7 @@ namespace API.Controllers
             var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
             if (userId.Equals(default))
             {
-                throw new Exception("You are not authorized");
+                throw new UnauthorizedAccessException();
             }
             return await _userService.GetUserModelWithAvatarByID(userId);
         }

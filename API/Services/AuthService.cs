@@ -1,4 +1,5 @@
 ﻿using API.Configs;
+using API.Exceptions;
 using API.Models.Token;
 using AutoMapper;
 using Common;
@@ -30,7 +31,7 @@ namespace API.Services
             var sesh = await _context.Sessions.Include(u => u.UserOfThisSession).FirstOrDefaultAsync(s => s.RefreshTokenId == refreshTokenID);
             if (sesh == null)
             {
-                throw new Exception("No session with such refresh token id found");
+                throw new SessionNotFoundException();
             }
             return sesh;
         }
@@ -57,7 +58,7 @@ namespace API.Services
                 var session = await GetSessionByRefreshToken(refreshTokenID);
                 if (!session.IsActive)
                 {
-                    throw new Exception("session is non-active");
+                    throw new InvalidSessionException("expired or set as non-active");
                 }
                 var user = session.UserOfThisSession;
 
@@ -65,13 +66,13 @@ namespace API.Services
                 await _context.SaveChangesAsync();
                 return GenerateToken(session);
             }
-            throw new Exception("Invalid user");
+            throw new SecurityTokenException("Invalid refresh token");
         }
 
         private TokenModel GenerateToken(UserSession session)
         {
             if (session.UserOfThisSession == null)
-                throw new Exception("Invalid session, has no user");
+                throw new InvalidSessionException("user is null");
 
             var dtNow = DateTime.Now;
             var accessJWT = new JwtSecurityToken(
@@ -109,12 +110,12 @@ namespace API.Services
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == login.ToLower());
             if (user == null)
             {
-                throw new Exception("No user by this login found");
+                throw new InvalidLoginException("email");
             }
 
             if (!HashHelper.CompareHash(password, user.PasswordHashed))
             {
-                throw new Exception("Invalid password");
+                throw new InvalidLoginException("password");
             }
             return user;
         }
@@ -124,7 +125,7 @@ namespace API.Services
             var sesh = await _context.Sessions.FirstOrDefaultAsync(s => s.Id == sessionID);
             if (sesh == null)
             {
-                throw new Exception("No session by this id found");
+                throw new SessionNotFoundException();
             }
             return sesh;
         }

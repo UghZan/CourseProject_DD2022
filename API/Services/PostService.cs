@@ -1,4 +1,5 @@
-﻿using API.Models.Attach;
+﻿using API.Exceptions;
+using API.Models.Attach;
 using API.Models.Post;
 using API.Models.Post.Comment;
 using API.Models.User;
@@ -60,7 +61,7 @@ namespace API.Services
             var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postID);
             if(post == null)
             {
-                throw new Exception("No such post found");
+                throw new PostNotFoundException();
             }
 
             var newComment = _mapper.Map<Comment>(commentModel);
@@ -76,7 +77,7 @@ namespace API.Services
             var post = await _context.Posts.Include(x => x.PostComments).ThenInclude(c => c.Author).ThenInclude(a => a.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
             if (post == null)
             {
-                throw new Exception("No such post found");
+                throw new PostNotFoundException();
             }
 
             return post.PostComments.Select(c => _mapper.Map<GetCommentModel>(c));
@@ -87,7 +88,7 @@ namespace API.Services
             var post = await _context.Posts.Include(p => p.PostAttachments).Include(p => p.Author).ThenInclude(u => u.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
             if (post == null)
             {
-                throw new Exception("Post not found");
+                throw new PostNotFoundException();
             }
             return _mapper.Map<GetPostModel>(post);
         }
@@ -110,7 +111,7 @@ namespace API.Services
         {
             var attach = await _context.PostPhotos.FirstOrDefaultAsync(p => p.Id == photoID);
             if (attach == null)
-                throw new Exception("Couldn't find attachment");
+                throw new AttachNotFoundException();
             return _mapper.Map<AttachModel>(attach);
         }
     }

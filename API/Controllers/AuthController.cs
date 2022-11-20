@@ -1,4 +1,5 @@
-﻿using API.Models.Token;
+﻿using API.Exceptions;
+using API.Models.Token;
 using API.Models.User;
 using API.Services;
 using Microsoft.AspNetCore.Http;
@@ -32,7 +33,7 @@ namespace API.Controllers
         {
             if (await _userService.CheckIfUserExists(model.Email))
             {
-                throw new Exception("User with this email already exists");
+                throw new UserExistsException("email");
             }
             return await _userService.CreateUser(model);
         }

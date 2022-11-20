@@ -1,4 +1,5 @@
 ﻿using API.Configs;
+using API.Exceptions;
 using API.Models.Attach;
 using API.Models.User;
 using AutoMapper;
@@ -42,6 +43,8 @@ namespace API.Services
                 _context.Users.Remove(dbUser);
                 await _context.SaveChangesAsync();
             }
+            else
+                throw new UserNotFoundException();
         }
 
         public async Task<Guid> CreateUser(CreateUserModel model)
@@ -56,7 +59,7 @@ namespace API.Services
         {
             var user = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == userID);
             if (user == null)
-                throw new Exception("User is not found");
+                throw new UserNotFoundException();
 
             var filePath = _attachService.UploadAttachToPermanentStorage(metadata);
 
@@ -92,7 +95,7 @@ namespace API.Services
             var user = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
             {
-                throw new Exception("No user by this id found");
+                throw new UserNotFoundException();
             }
             return user;
         }

@@ -39,12 +39,12 @@ namespace API.Services
             var fileInfo = new FileInfo(newPath);
             if (fileInfo.Exists)
             {
-                throw new Exception("Such file already exists");
+                throw new Exceptions.FileExistsException();
             }
             else
             {
                 if (fileInfo.Directory == null)
-                    throw new Exception("Temp doesn't exist");
+                    throw new DirectoryNotFoundException("Temp directory doesn't exist");
 
                 if (!fileInfo.Directory.Exists)
                 {
@@ -74,7 +74,7 @@ namespace API.Services
             var file = new FileInfo(pathToAttachment);
             if (!file.Exists)
             {
-                throw new Exception("Requested attachment file doesn't exist");
+                throw new FileNotFoundException("Requested attachment file doesn't exist in temp folder");
             }
 
             var permanentAttachPath = Path.Combine(Directory.GetCurrentDirectory(), "attaches", attachmentMetadata.Id.ToString());
