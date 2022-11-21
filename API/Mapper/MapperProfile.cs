@@ -2,6 +2,7 @@
 using API.Models.Attach;
 using API.Models.Post;
 using API.Models.Post.Comment;
+using API.Models.Post.Reaction;
 using API.Models.User;
 using AutoMapper;
 using Common;
@@ -35,6 +36,10 @@ namespace API.Mapper
             CreateMap<CreatePostModel, DAL.Entities.Post>()
                 .ForMember(u => u.Id, m => m.MapFrom(s => Guid.NewGuid()))
                 .ForMember(u => u.CreationDate, m => m.MapFrom(s => DateTime.UtcNow));
+
+            CreateMap<DAL.Entities.Reaction, GetReactionModel>();
+            CreateMap<CreateReactionModel, DAL.Entities.Reaction>()
+                .ForMember(u => u.Id, m => m.MapFrom(s => Guid.NewGuid()));
 
             CreateMap<DAL.Entities.PostPhoto, GetPostPhotoModel>().AfterMap<PostPhotoToPostPhotoModelAction>();
         }

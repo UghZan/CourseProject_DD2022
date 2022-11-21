@@ -2,6 +2,7 @@
 using API.Models.Attach;
 using API.Models.Post;
 using API.Models.Post.Comment;
+using API.Models.Post.Reaction;
 using API.Models.User;
 using AutoMapper;
 using DAL;
@@ -21,7 +22,6 @@ namespace API.Services
         private readonly DataContext _context;
         private readonly LinkProviderService _linkService;
 
-
         public PostService(IMapper mapper, DataContext context, UserService userService, AttachService attachService, LinkProviderService linkService)
         {
             _mapper = mapper;
@@ -30,7 +30,7 @@ namespace API.Services
             _attachService = attachService;
             _linkService = linkService;
         }
-
+        #region Posts
         public async Task<Guid> CreatePost(Guid userID, CreatePostModel createPostModel)
         {
             var user = await _userService.GetUserByID(userID);
@@ -54,12 +54,59 @@ namespace API.Services
             await _context.SaveChangesAsync();
             return newPost.Id;
         }
-
+        public async Task<GetPostModel> GetPostByID(Guid postID)
+        {
+            var post = await _context.Posts.Include(p => p.PostAttachments).Include(p => p.Author).ThenInclude(u => u.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
+            if (post == null)
+            {
+                throw new PostNotFoundException();
+            }
+            return _mapper.Map<GetPostModel>(post);
+        }
+        public async Task<IEnumerable<GetPostModel>> GetPostsByUser(Guid userID, int amount, int startingFrom)
+        {
+            var posts = await _context.Posts
+                .Include(x => x.Author).ThenInclude(x => x.Avatar)
+                .Include(x => x.PostAttachments).AsNoTracking().OrderByDescending(x => x.CreationDate).Where(x => x.AuthorId == userID)
+                .Take(amount).Skip(startingFrom).ToListAsync();
+            List<GetPostModel> userPosts = new List<GetPostModel>();
+            foreach(Post p in posts)
+            {
+                userPosts.Add(_mapper.Map<GetPostModel>(p));
+            }
+            return userPosts;
+            
+        }
+        public async Task<AttachModel> GetPostAttachByID(Guid photoID)
+        {
+            var attach = await _context.PostPhotos.FirstOrDefaultAsync(p => p.Id == photoID);
+            if (attach == null)
+                throw new AttachNotFoundException();
+            return _mapper.Map<AttachModel>(attach);
+        }
+        public async Task RemovePost(Guid postID, Guid actorID)
+        {
+            var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postID);
+            if (post == null)
+            {
+                throw new PostNotFoundException();
+            }
+            var user = await _userService.GetUserByID(actorID);
+            //if user isn't an author of the post, he shouldn't be able to delete it
+            if(post.AuthorId != user.Id) // could use some sort of admin permissions later
+            {
+                throw new PermissionException("removing post");
+            }
+            _context.Posts.Remove(post);
+            await _context.SaveChangesAsync();
+        }
+        #endregion
+        #region Comments
         public async Task<Guid> CreateCommentForPost(Guid userID, Guid postID, CreateCommentModel commentModel)
         {
             var user = await _userService.GetUserByID(userID);
             var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postID);
-            if(post == null)
+            if (post == null)
             {
                 throw new PostNotFoundException();
             }
@@ -82,37 +129,66 @@ namespace API.Services
 
             return post.PostComments.Select(c => _mapper.Map<GetCommentModel>(c));
         }
-
-        public async Task<GetPostModel> GetPostByID(Guid postID)
+        public async Task RemoveComment(Guid commentId, Guid actorID)
         {
-            var post = await _context.Posts.Include(p => p.PostAttachments).Include(p => p.Author).ThenInclude(u => u.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
+            var comment = await _context.Comments.FirstOrDefaultAsync(p => p.Id == commentId);
+            if (comment == null)
+            {
+                throw new CommentNotFoundException();
+            }
+            var user = await _userService.GetUserByID(actorID);
+            //if user isn't an author of the comment, he shouldn't be able to delete it
+            if (comment.AuthorId != user.Id)
+            {
+                throw new PermissionException("removing comment");
+            }
+            _context.Comments.Remove(comment);
+            await _context.SaveChangesAsync();
+        }
+
+        #endregion
+        #region Reactions
+        public async Task<Guid> CreateReactionForPost(Guid userID, Guid postID, CreateReactionModel reactModel)
+        {
+            var user = await _userService.GetUserByID(userID);
+            var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postID);
             if (post == null)
             {
                 throw new PostNotFoundException();
             }
-            return _mapper.Map<GetPostModel>(post);
-        }
-
-        public async Task<IEnumerable<GetPostModel>> GetPostsByUser(Guid userID, int amount, int startingFrom)
-        {
-            var posts = await _context.Posts
-                .Include(x => x.Author).ThenInclude(x => x.Avatar)
-                .Include(x => x.PostAttachments).AsNoTracking().OrderByDescending(x => x.CreationDate).Where(x => x.AuthorId == userID)
-                .Take(amount).Skip(startingFrom).ToListAsync();
-            List<GetPostModel> userPosts = new List<GetPostModel>();
-            foreach(Post p in posts)
+            if(reactModel.ReactionType > ReactionType.WOAH)
             {
-                userPosts.Add(_mapper.Map<GetPostModel>(p));
+                throw new InvalidReactionException(reactModel.ReactionType.ToString());
             }
-            return userPosts;
-            
+            var newReaction = _mapper.Map<Reaction>(reactModel);
+            newReaction.ReactionPost = post;
+            newReaction.ReactionAuthor = user;
+
+            await _context.Reactions.AddAsync(newReaction);
+            await _context.SaveChangesAsync();
+            return newReaction.Id;
         }
-        public async Task<AttachModel> GetPostAttachByID(Guid photoID)
+        public async Task<IEnumerable<GetReactionModel>> GetReactionsForPost(Guid postID)
         {
-            var attach = await _context.PostPhotos.FirstOrDefaultAsync(p => p.Id == photoID);
-            if (attach == null)
-                throw new AttachNotFoundException();
-            return _mapper.Map<AttachModel>(attach);
+            var post = await _context.Posts.Include(x => x.PostReactions).ThenInclude(c => c.ReactionAuthor).ThenInclude(a => a.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
+            if (post == null)
+            {
+                throw new PostNotFoundException();
+            }
+
+            return post.PostReactions.Select(c => _mapper.Map<GetReactionModel>(c));
         }
+        public async Task RemoveReaction(Guid postID, Guid userID)
+        {
+            var reaction = await _context.Reactions.FirstOrDefaultAsync(p => p.ReactionPostId == postID && p.ReactionAuthorId == userID);
+            if (reaction == null)
+            {
+                throw new ReactionNotFoundException();
+            }
+
+            _context.Reactions.Remove(reaction);
+            await _context.SaveChangesAsync();
+        }
+        #endregion
     }
 }

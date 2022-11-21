@@ -1,5 +1,6 @@
 ﻿using API.Models.Post;
 using API.Models.Post.Comment;
+using API.Models.Post.Reaction;
 using API.Services;
 using Common.Consts;
 using Common.Extensions;
@@ -34,6 +35,7 @@ namespace API.Controllers
             });
         }
 
+        #region Posts
         [HttpPost]
         public async Task<Guid> CreatePost(CreatePostModel model)
         {
@@ -52,12 +54,24 @@ namespace API.Controllers
             return await _postService.GetPostByID(postID);
         }
 
+        [HttpDelete]
+        public async Task RemovePost(Guid postID)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            await _postService.RemovePost(postID, userId);
+        }
+
         [HttpGet]
         public async Task<IEnumerable<GetPostModel>> GetUserPosts(Guid userId, int amount = 5, int startingFrom = 0)
         {
             return await _postService.GetPostsByUser(userId, amount, startingFrom);
         }
-
+        #endregion
+        #region Comments
         [HttpPost]
         public async Task<Guid> CreateCommentOnPost(Guid postID, CreateCommentModel commentModel)
         {
@@ -69,10 +83,52 @@ namespace API.Controllers
             return await _postService.CreateCommentForPost(userId, postID, commentModel);
         }
 
+        [HttpDelete]
+        public async Task RemoveComment(Guid commentId)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            await _postService.RemoveComment(commentId, userId);
+        }
+
         [HttpGet]
         public async Task<IEnumerable<GetCommentModel>> GetPostComments(Guid postID)
         {
             return await _postService.GetCommentsForPost(postID);
         }
+        #endregion
+        #region Reactions
+        [HttpPost]
+        public async Task<Guid> CreateReactionOnPost(Guid postID, CreateReactionModel reactModel)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            return await _postService.CreateReactionForPost(userId, postID, reactModel);
+        }
+        
+        [HttpDelete]
+        public async Task RemoveReactionFromPost(Guid postID)
+        {
+            //considering that it's 1 reaction per user-post pair, it's enough to use only postID as an argument
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            await _postService.RemoveReaction(postID, userId);
+        }
+        
+        [HttpGet]
+        public async Task<IEnumerable<GetReactionModel>> GetPostReactions(Guid postID)
+        {
+            return await _postService.GetReactionsForPost(postID);
+        }
+        #endregion
     }
 }

@@ -1,8 +1,5 @@
 ﻿namespace API.Middleware
 {
-    using Api.Consts;
-    using Api.Exceptions;
-    using Api.Services;
     using API.Exceptions;
     using Common.Extentions;
     using DAL.Entities;
@@ -30,9 +27,24 @@
                     context.Response.StatusCode = 404;
                     await context.Response.WriteAsJsonAsync(ex.Message);
                 }
+                catch (ExistsException ex)
+                {
+                    context.Response.StatusCode = 409;
+                    await context.Response.WriteAsJsonAsync(ex.Message);
+                }
                 catch (UnauthorizedAccessException ex)
                 {
                     context.Response.StatusCode = 401;
+                    await context.Response.WriteAsJsonAsync(ex.Message);
+                }
+                catch (InvalidException ex)
+                {
+                    context.Response.StatusCode = 406;
+                    await context.Response.WriteAsJsonAsync(ex.Message);
+                }
+                catch (PermissionException ex)
+                {
+                    context.Response.StatusCode = 403;
                     await context.Response.WriteAsJsonAsync(ex.Message);
                 }
 

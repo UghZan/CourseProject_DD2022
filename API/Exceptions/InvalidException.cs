@@ -1,8 +1,12 @@
 ﻿namespace API.Exceptions
 {
-    public class InvalidSessionException : Exception
+    public class InvalidException : Exception
     {
-        public string ProblematicField { get; set; }
+        protected string ProblematicField { get; set; }
+    }
+    public class InvalidSessionException : InvalidException
+    {
+        
         public override string Message => $"Session invalid: {ProblematicField}";
 
         public InvalidSessionException(string problematicField)
@@ -11,9 +15,18 @@
         }
     }
 
-    public class InvalidLoginException : Exception
+    public class InvalidReactionException : InvalidException
     {
-        public string ProblematicField { get; set; }
+        public override string Message => $"Invalid reaction id: {ProblematicField}";
+
+        public InvalidReactionException(string problematicField)
+        {
+            ProblematicField = problematicField;
+        }
+    }
+
+    public class InvalidLoginException : InvalidException
+    {
         public override string Message => $"Login invalid: wrong {ProblematicField}";
         public InvalidLoginException(string problematicField)
         {

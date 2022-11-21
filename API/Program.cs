@@ -3,6 +3,7 @@ using API.Configs;
 using API.Mapper;
 using API.Middleware.Api.Middlewares;
 using API.Services;
+using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -60,6 +61,12 @@ internal class Program
         {
             options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL"), sql => { });
         });
+
+        builder.Services.AddOptions();
+        builder.Services.AddMemoryCache();
+        builder.Services.Configure<ClientRateLimitOptions>(builder.Configuration.GetSection("ClientRateLimiting"));
+        builder.Services.AddInMemoryRateLimiting();
+        builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
         builder.Services.AddAutoMapper(typeof(MapperProfile).Assembly);
 
@@ -120,7 +127,7 @@ internal class Program
         }
 
         app.UseHttpsRedirection();
-
+        app.UseClientRateLimiting();
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseTokenValidator();

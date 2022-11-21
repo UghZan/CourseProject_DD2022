@@ -14,7 +14,7 @@ namespace DAL.Entities
         public DateTimeOffset CreationDate { get; set; }
         public Guid ParentPostId { get; set; }
 
-        public virtual User Author { get; set; } = null!;
         public virtual Post ParentPost { get; set; } = null!;
+        public virtual User Author { get; set; } = null!;
     }
 }
