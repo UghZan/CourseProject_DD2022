@@ -33,4 +33,13 @@
             ProblematicField = problematicField;
         }
     }
+
+    public class InvalidOperationException : InvalidException
+    {
+        public override string Message => $"Invalid operation: {ProblematicField}";
+        public InvalidOperationException(string problematicField)
+        {
+            ProblematicField = problematicField;
+        }
+    }
 }

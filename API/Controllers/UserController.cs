@@ -1,4 +1,5 @@
-﻿using API.Models.Attach;
+﻿using API.Exceptions;
+using API.Models.Attach;
 using API.Models.User;
 using API.Services;
 using AutoMapper;
@@ -34,6 +35,7 @@ namespace API.Controllers
             });
         }
 
+        #region Basic Users Functionality
         [HttpPost]
         public async Task AddAvatarForUser(MetadataModel avatarMetadata)
         {
@@ -58,5 +60,34 @@ namespace API.Controllers
         {
             return await _userService.GetUsers();
         }
+        #endregion
+        #region Subs
+        [HttpPost]
+        public async Task SubscribeToUser(Guid targetId)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            if(userId.Equals(targetId))
+            {
+                throw new Exceptions.InvalidOperationException("subscription to self");
+            }
+            await _userService.SubscribeToUser(userId, targetId);
+        }
+
+        [HttpGet]
+        public async Task<ICollection<GetUserModelWithAvatar>?> GetUserSubscriptions(Guid userId)
+        {
+            return await _userService.GetUserSubscriptions(userId);
+        }
+
+        [HttpGet]
+        public async Task<ICollection<GetUserModelWithAvatar>?> GetUserSubscribers(Guid userId)
+        {
+            return await _userService.GetUserSubscribers(userId);
+        }
+        #endregion
     }
 }

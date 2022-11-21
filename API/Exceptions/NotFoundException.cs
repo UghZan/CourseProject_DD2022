@@ -4,9 +4,10 @@ namespace API.Exceptions
 {
     public class NotFoundException : Exception
     {
+        public string? AdditionalInfo { get; set; }
         public string? Model { get; set; }
 
-        public override string Message => $"{Model} is not found";
+        public override string Message => $"{Model} is not found: {AdditionalInfo}";
     }
 
     public class UserNotFoundException : NotFoundException
@@ -15,8 +16,14 @@ namespace API.Exceptions
         {
             Model = "User";
         }
+        public UserNotFoundException(string parameter)
+        {
+            Model = "User";
+            AdditionalInfo = parameter;
+        }
 
     }
+
     public class PostNotFoundException : NotFoundException
     {
         public PostNotFoundException()

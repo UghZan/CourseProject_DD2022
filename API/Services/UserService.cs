@@ -30,6 +30,7 @@ namespace API.Services
             _linkService = linkProviderService;
         }
 
+        #region Basic User Functionality
         public async Task<bool> CheckIfUserExists(string email)
         {
             return await _context.Users.AnyAsync(u => u.Email.ToLower() == email.ToLower());
@@ -113,7 +114,46 @@ namespace API.Services
 
             return _mapper.Map<GetUserModelWithAvatar>(user);
         }
+        #endregion
+        #region Subs
+        public async Task SubscribeToUser(Guid requesterId, Guid targetId)
+        {
+            var user = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == requesterId);
+            if (user == null)
+                throw new UserNotFoundException("request creator");
+            var targetUser = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == targetId);
+            if (targetUser == null)
+                throw new UserNotFoundException("request target");
 
+            if (targetUser.Subscribers == null)
+                targetUser.Subscribers = new List<User>();
+            if (user.Subscriptions == null)
+                user.Subscriptions = new List<User>();
+            targetUser.Subscribers.Add(user);
+            user.Subscriptions.Add(targetUser);
+
+            await _context.SaveChangesAsync();
+        }
+        
+        public async Task<ICollection<GetUserModelWithAvatar>?> GetUserSubscriptions(Guid userId)
+        {
+            var user = await _context.Users.Include(x => x.Subscriptions)?.ThenInclude(u => u.Avatar).FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                throw new UserNotFoundException();
+
+            return user.Subscriptions?.Select(s => _mapper.Map<GetUserModelWithAvatar>(s)).ToList();
+        }
+
+        public async Task<ICollection<GetUserModelWithAvatar>?> GetUserSubscribers(Guid userId)
+        {
+            var user = await _context.Users.Include(x => x.Subscribers)?.ThenInclude(u => u.Avatar).FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                throw new UserNotFoundException();
+
+            return user.Subscribers?.Select(s => _mapper.Map<GetUserModelWithAvatar>(s)).ToList();
+        }
+
+        #endregion
         public void Dispose()
         {
             _context.Dispose();
