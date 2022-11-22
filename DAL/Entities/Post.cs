@@ -10,11 +10,14 @@ namespace DAL.Entities
     {
         public Guid Id { get; set; }
         public string? PostContent { get; set; }
-        public ICollection<PostPhoto> PostAttachments { get; set; } = null!;
-        public ICollection<Comment> PostComments { get; set; } = null!;
-        public ICollection<Reaction> PostReactions { get; set; } = null!;
-        public User Author { get; set; } = null!;
+
+        public virtual ICollection<PostPhoto> PostAttachments { get; set; } = null!;
+        public virtual ICollection<Comment> PostComments { get; set; } = null!;
+        public virtual ICollection<PostReaction> PostReactions { get; set; } = null!;
+
         public Guid AuthorId { get; set; }
+        public virtual User Author { get; set; } = null!;
+
         public DateTimeOffset CreationDate { get; set; }
     }
 }

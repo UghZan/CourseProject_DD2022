@@ -10,5 +10,7 @@ namespace API.Models.Post
         public ICollection<GetPostPhotoModel> PostAttachments { get; set; } = null!;
         public GetUserModelWithAvatar Author { get; set; } = null!;
         public DateTimeOffset CreationDate { get; set; }
+        public int ReactionsCount { get; set; }
+        public int CommentsCount { get; set; }
     }
 }

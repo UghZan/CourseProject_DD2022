@@ -102,16 +102,27 @@ namespace API.Controllers
         #endregion
         #region Reactions
         [HttpPost]
-        public async Task<Guid> CreateReactionOnPost(Guid postID, CreateReactionModel reactModel)
+        public async Task CreateReactionOnPost(Guid postID, CreateReactionModel reactModel)
         {
             var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
             if (userId.Equals(default))
             {
                 throw new UnauthorizedAccessException();
             }
-            return await _postService.CreateReactionForPost(userId, postID, reactModel);
+            await _postService.CreateReactionForPost(userId, postID, reactModel);
         }
-        
+
+        [HttpPost]
+        public async Task CreateReactionOnComment(Guid commentID, CreateReactionModel reactModel)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            await _postService.CreateReactionForComment(userId, commentID, reactModel);
+        }
+
         [HttpDelete]
         public async Task RemoveReactionFromPost(Guid postID)
         {
@@ -121,13 +132,31 @@ namespace API.Controllers
             {
                 throw new UnauthorizedAccessException();
             }
-            await _postService.RemoveReaction(postID, userId);
+            await _postService.RemoveReactionFromPost(postID, userId);
         }
-        
+
+        [HttpDelete]
+        public async Task RemoveReactionFromComment(Guid commentID)
+        {
+            //considering that it's 1 reaction per user-post pair, it's enough to use only postID as an argument
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            await _postService.RemoveReactionFromComment(commentID, userId);
+        }
+
         [HttpGet]
         public async Task<IEnumerable<GetReactionModel>> GetPostReactions(Guid postID)
         {
             return await _postService.GetReactionsForPost(postID);
+        }
+
+        [HttpGet]
+        public async Task<IEnumerable<GetReactionModel>> GetCommentReactions(Guid postID)
+        {
+            return await _postService.GetReactionsForComment(postID);
         }
         #endregion
     }

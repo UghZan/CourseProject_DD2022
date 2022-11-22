@@ -3,6 +3,7 @@ using System;
 using DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace API.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20221122170415_reactions_split")]
+    partial class reactions_split
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -82,15 +84,6 @@ namespace API.Migrations
 
             modelBuilder.Entity("DAL.Entities.CommentReaction", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTimeOffset>("CreationDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<Guid>("ReactionAuthorId")
                         .HasColumnType("uuid");
 
@@ -99,8 +92,6 @@ namespace API.Migrations
 
                     b.Property<int>("ReactionType")
                         .HasColumnType("integer");
-
-                    b.HasKey("Id");
 
                     b.HasIndex("ReactionAuthorId");
 
@@ -134,15 +125,6 @@ namespace API.Migrations
 
             modelBuilder.Entity("DAL.Entities.PostReaction", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTimeOffset>("CreationDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<Guid>("ReactionAuthorId")
                         .HasColumnType("uuid");
 
@@ -151,8 +133,6 @@ namespace API.Migrations
 
                     b.Property<int>("ReactionType")
                         .HasColumnType("integer");
-
-                    b.HasKey("Id");
 
                     b.HasIndex("ReactionAuthorId");
 
@@ -298,7 +278,7 @@ namespace API.Migrations
                         .IsRequired();
 
                     b.HasOne("DAL.Entities.Comment", "ReactionComment")
-                        .WithMany("CommentReactions")
+                        .WithMany()
                         .HasForeignKey("ReactionCommentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -328,7 +308,7 @@ namespace API.Migrations
                         .IsRequired();
 
                     b.HasOne("DAL.Entities.Post", "ReactionPost")
-                        .WithMany("PostReactions")
+                        .WithMany()
                         .HasForeignKey("ReactionPostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -398,18 +378,11 @@ namespace API.Migrations
                     b.Navigation("Post");
                 });
 
-            modelBuilder.Entity("DAL.Entities.Comment", b =>
-                {
-                    b.Navigation("CommentReactions");
-                });
-
             modelBuilder.Entity("DAL.Entities.Post", b =>
                 {
                     b.Navigation("PostAttachments");
 
                     b.Navigation("PostComments");
-
-                    b.Navigation("PostReactions");
                 });
 
             modelBuilder.Entity("DAL.Entities.User", b =>

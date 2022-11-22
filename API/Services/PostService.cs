@@ -57,11 +57,14 @@ namespace API.Services
         public async Task<GetPostModel> GetPostByID(Guid postID)
         {
             var post = await _context.Posts.Include(p => p.PostAttachments).Include(p => p.Author).ThenInclude(u => u.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
+            var reactions =  _context.PostReactions.Where(r => r.ReactionPostId == postID).Count();
             if (post == null)
             {
                 throw new PostNotFoundException();
             }
-            return _mapper.Map<GetPostModel>(post);
+            var postModel = _mapper.Map<GetPostModel>(post);
+            postModel.ReactionsCount = reactions;
+            return postModel;
         }
         public async Task<IEnumerable<GetPostModel>> GetPostsByUser(Guid userID, int amount, int startingFrom)
         {
@@ -72,6 +75,9 @@ namespace API.Services
             List<GetPostModel> userPosts = new List<GetPostModel>();
             foreach(Post p in posts)
             {
+                var postModel = _mapper.Map<GetPostModel>(p);
+                var reactions = _context.PostReactions.Where(r => r.ReactionPostId == p.Id).Count();
+                postModel.ReactionsCount = reactions;
                 userPosts.Add(_mapper.Map<GetPostModel>(p));
             }
             return userPosts;
@@ -148,45 +154,82 @@ namespace API.Services
 
         #endregion
         #region Reactions
-        public async Task<Guid> CreateReactionForPost(Guid userID, Guid postID, CreateReactionModel reactModel)
+        public async Task CreateReactionForPost(Guid userID, Guid postID, CreateReactionModel reactModel)
         {
             var user = await _userService.GetUserByID(userID);
             var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postID);
+
             if (post == null)
             {
                 throw new PostNotFoundException();
             }
+
             if(reactModel.ReactionType > ReactionType.WOAH)
             {
                 throw new InvalidReactionException(reactModel.ReactionType.ToString());
             }
-            var newReaction = _mapper.Map<Reaction>(reactModel);
+
+            var newReaction = _mapper.Map<PostReaction>(reactModel);
             newReaction.ReactionPost = post;
             newReaction.ReactionAuthor = user;
 
-            await _context.Reactions.AddAsync(newReaction);
+            await _context.PostReactions.AddAsync(newReaction);
             await _context.SaveChangesAsync();
-            return newReaction.Id;
         }
-        public async Task<IEnumerable<GetReactionModel>> GetReactionsForPost(Guid postID)
+        public async Task CreateReactionForComment(Guid userID, Guid commentID, CreateReactionModel reactModel)
         {
-            var post = await _context.Posts.Include(x => x.PostReactions).ThenInclude(c => c.ReactionAuthor).ThenInclude(a => a.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
-            if (post == null)
+            var user = await _userService.GetUserByID(userID);
+            var comment = await _context.Comments.FirstOrDefaultAsync(p => p.Id == commentID);
+
+            if (comment == null)
             {
                 throw new PostNotFoundException();
             }
 
-            return post.PostReactions.Select(c => _mapper.Map<GetReactionModel>(c));
+            if (reactModel.ReactionType > ReactionType.WOAH)
+            {
+                throw new InvalidReactionException(reactModel.ReactionType.ToString());
+            }
+
+            var newReaction = _mapper.Map<CommentReaction>(reactModel);
+            newReaction.ReactionComment = comment;
+            newReaction.ReactionAuthor = user;
+
+            await _context.CommentReactions.AddAsync(newReaction);
+            await _context.SaveChangesAsync();
         }
-        public async Task RemoveReaction(Guid postID, Guid userID)
+        public async Task<IEnumerable<GetReactionModel>> GetReactionsForPost(Guid postID)
         {
-            var reaction = await _context.Reactions.FirstOrDefaultAsync(p => p.ReactionPostId == postID && p.ReactionAuthorId == userID);
+            var reactions = await _context.PostReactions.Include(x => x.ReactionAuthor).ThenInclude(a => a.Avatar).Where(p => p.ReactionPostId == postID).ToListAsync();
+
+            return reactions.Select(c => _mapper.Map<GetReactionModel>(c));
+        }
+        public async Task<IEnumerable<GetReactionModel>> GetReactionsForComment(Guid commentID)
+        {
+            var reactions = await _context.CommentReactions.Include(x => x.ReactionAuthor).ThenInclude(a => a.Avatar).Where(p => p.ReactionCommentId == commentID).ToListAsync();
+
+            return reactions.Select(c => _mapper.Map<GetReactionModel>(c));
+        }
+        public async Task RemoveReactionFromPost(Guid postID, Guid userID)
+        {
+            var reaction = await _context.PostReactions.FirstOrDefaultAsync(p => p.ReactionPostId == postID && p.ReactionAuthorId == userID);
             if (reaction == null)
             {
                 throw new ReactionNotFoundException();
             }
 
-            _context.Reactions.Remove(reaction);
+            _context.PostReactions.Remove(reaction);
+            await _context.SaveChangesAsync();
+        }
+        public async Task RemoveReactionFromComment(Guid commentID, Guid userID)
+        {
+            var reaction = await _context.CommentReactions.FirstOrDefaultAsync(p => p.ReactionCommentId == commentID && p.ReactionAuthorId == userID);
+            if (reaction == null)
+            {
+                throw new ReactionNotFoundException();
+            }
+
+            _context.CommentReactions.Remove(reaction);
             await _context.SaveChangesAsync();
         }
         #endregion

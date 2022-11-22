@@ -20,13 +20,27 @@ namespace DAL
             modelBuilder.Entity<User>()
                 .HasIndex(f => f.Email)
                 .IsUnique();
-            modelBuilder
-               .Entity<User>()
+            modelBuilder.Entity<User>()
                .HasIndex(f => f.Name)
                .IsUnique();
+            modelBuilder.Entity<Post>()
+                .HasMany(p => p.PostReactions)
+                .WithOne(r => r.ReactionPost);
+            modelBuilder.Entity<Comment>()
+                .HasMany(c => c.CommentReactions)
+                .WithOne(c => c.ReactionComment);
+            modelBuilder.Entity<PostReaction>()
+                .HasIndex(f => new { f.ReactionPostId, f.ReactionAuthorId })
+                .IsUnique();
+            modelBuilder.Entity<CommentReaction>()
+                .HasIndex(f => new { f.ReactionCommentId, f.ReactionAuthorId })
+                .IsUnique();
+
             //Table-Per-Type
             modelBuilder.Entity<Avatar>().ToTable(nameof(Avatars));
             modelBuilder.Entity<PostPhoto>().ToTable(nameof(PostPhotos));
+            modelBuilder.Entity<CommentReaction>().ToTable(nameof(CommentReactions));
+            modelBuilder.Entity<PostReaction>().ToTable(nameof(PostReactions));
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder builder) => builder.UseNpgsql(b => b.MigrationsAssembly("API"));
@@ -38,6 +52,7 @@ namespace DAL
         public DbSet<Avatar> Avatars => Set<Avatar>();
         public DbSet<Post> Posts => Set<Post>();
         public DbSet<Comment> Comments => Set<Comment>();
-        public DbSet<Reaction> Reactions => Set<Reaction>();
+        public DbSet<PostReaction> PostReactions => Set<PostReaction>();
+        public DbSet<CommentReaction> CommentReactions => Set<CommentReaction>();
     }
 }

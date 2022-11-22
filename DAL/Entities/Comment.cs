@@ -16,5 +16,6 @@ namespace DAL.Entities
 
         public virtual Post ParentPost { get; set; } = null!;
         public virtual User Author { get; set; } = null!;
+        public virtual ICollection<CommentReaction>? CommentReactions { get; set; }
     }
 }
