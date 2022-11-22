@@ -33,6 +33,7 @@ namespace API.Mapper
 
             CreateMap<DAL.Entities.Comment, GetCommentModel>()
                 .ForMember(u => u.ReactionsCount, m => m.MapFrom(s => s.CommentReactions!.Count));
+            CreateMap<DAL.Entities.Comment, GetCommentContentModel>();
             CreateMap<CreateCommentModel, DAL.Entities.Comment>()
                 .ForMember(u => u.Id, m => m.MapFrom(s => Guid.NewGuid()))
                 .ForMember(u => u.CreationDate, m => m.MapFrom(s => DateTime.UtcNow));
@@ -40,6 +41,7 @@ namespace API.Mapper
             CreateMap<DAL.Entities.Post, GetPostModel>()
                 .ForMember(u => u.CommentsCount, m=>m.MapFrom(s => s.PostComments!.Count))
                 .ForMember(u => u.ReactionsCount, m=>m.MapFrom(s => s.PostReactions!.Count));
+            CreateMap<DAL.Entities.Post, GetPostContentModel>();
             CreateMap<CreatePostModel, DAL.Entities.Post>()
                 .ForMember(u => u.Id, m => m.MapFrom(s => Guid.NewGuid()))
                 .ForMember(u => u.CreationDate, m => m.MapFrom(s => DateTime.UtcNow));

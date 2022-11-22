@@ -59,6 +59,17 @@ namespace API.Services
 
             return metadata;
         }
+
+        public void PurgeAttachFromPermanentStorage(string path)
+        {
+            var file = new FileInfo(path);
+            if (!file.Exists)
+            {
+                throw new FileNotFoundException("Requested attachment file doesn't exist in temp folder");
+            }
+
+            System.IO.File.Delete(path);
+        }
     
         public string UploadAttachToPermanentStorage(MetadataModel attachmentMetadata)
         {
@@ -79,6 +90,9 @@ namespace API.Services
 
             var permanentAttachPath = Path.Combine(Directory.GetCurrentDirectory(), "attaches", attachmentMetadata.Id.ToString());
             var permanentAttachFileInfo = new FileInfo(permanentAttachPath);
+
+            if (permanentAttachFileInfo.Exists)
+                return permanentAttachPath;
 
             if (permanentAttachFileInfo.Directory != null && !permanentAttachFileInfo.Directory.Exists)
             {

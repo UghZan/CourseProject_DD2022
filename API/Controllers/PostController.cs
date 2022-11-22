@@ -48,6 +48,18 @@ namespace API.Controllers
 
         }
 
+        [HttpPut]
+        public async Task<Guid> RecreatePost(Guid postId, CreatePostModel model)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            return await _postService.RecreatePost(postId, userId, model);
+
+        }
+
         [HttpGet]
         public async Task<GetPostModel> GetPost(Guid postID)
         {
@@ -80,7 +92,19 @@ namespace API.Controllers
             {
                 throw new UnauthorizedAccessException();
             }
-            return await _postService.CreateCommentForPost(userId, postID, commentModel);
+            return await _postService.CreateCommentForPost(postID, userId, commentModel);
+        }
+
+        [HttpPut]
+        public async Task<Guid> RecreateComment(Guid commentID, CreateCommentModel model)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            return await _postService.RecreateComment(commentID, userId, model);
+
         }
 
         [HttpDelete]

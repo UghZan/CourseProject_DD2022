@@ -54,17 +54,52 @@ namespace API.Services
             await _context.SaveChangesAsync();
             return newPost.Id;
         }
+        public async Task<Guid> RecreatePost(Guid postID, Guid userID, CreatePostModel newPostModel)
+        {
+            var originalPost = await _context.Posts.Include(p => p.PostAttachments).Include(p => p.Author).FirstOrDefaultAsync(p => p.Id == postID);
+            if (originalPost == null)
+            {
+                throw new PostNotFoundException();
+            }
+            if (userID != originalPost.AuthorId)
+            {
+                throw new PermissionException("editing post");
+            }
+            originalPost.PostContent = newPostModel.PostContent;
+
+            if (!originalPost.PostAttachments.IsNullOrEmpty())
+            {
+                foreach(PostPhoto p in originalPost.PostAttachments)
+                {
+                    _attachService.PurgeAttachFromPermanentStorage(p.FilePath);
+                    _context.PostPhotos.Remove(p);
+                }
+                originalPost.PostAttachments.Clear();
+            }
+            if (!newPostModel.PostAttachments.IsNullOrEmpty())
+            {
+                foreach (MetadataModel attachment in newPostModel.PostAttachments)
+                {
+                    var pathToAttachment = _attachService.UploadAttachToPermanentStorage(attachment);
+                    var postPhoto = _mapper.Map<PostPhoto>(attachment);
+                    postPhoto.FilePath = pathToAttachment;
+                    postPhoto.Post = originalPost;
+                    postPhoto.Author = originalPost.Author;
+                    await _context.PostPhotos.AddAsync(postPhoto);
+                }
+            }
+            _context.Posts.Update(originalPost);
+            await _context.SaveChangesAsync();
+            return originalPost.Id;
+        }
         public async Task<GetPostModel> GetPostByID(Guid postID)
         {
-            var post = await _context.Posts.Include(p => p.PostAttachments).Include(p => p.Author).ThenInclude(u => u.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
-            var reactions =  _context.PostReactions.Where(r => r.ReactionPostId == postID).Count();
+            var post = await _context.Posts.Include(p => p.PostComments).Include(p=>p.PostReactions).Include(p => p.PostAttachments).Include(p => p.Author).ThenInclude(u => u.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
             if (post == null)
             {
                 throw new PostNotFoundException();
             }
-            var postModel = _mapper.Map<GetPostModel>(post);
-            postModel.ReactionsCount = reactions;
-            return postModel;
+            return _mapper.Map<GetPostModel>(post);
         }
         public async Task<IEnumerable<GetPostModel>> GetPostsByUser(Guid userID, int amount, int startingFrom)
         {
@@ -108,7 +143,7 @@ namespace API.Services
         }
         #endregion
         #region Comments
-        public async Task<Guid> CreateCommentForPost(Guid userID, Guid postID, CreateCommentModel commentModel)
+        public async Task<Guid> CreateCommentForPost(Guid postID, Guid userID, CreateCommentModel commentModel)
         {
             var user = await _userService.GetUserByID(userID);
             var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postID);
@@ -125,9 +160,26 @@ namespace API.Services
             await _context.SaveChangesAsync();
             return newComment.Id;
         }
+        public async Task<Guid> RecreateComment(Guid commentID, Guid userID, CreateCommentModel newCommentModel)
+        {
+            var comment = await _context.Comments.FirstOrDefaultAsync(p => p.Id == commentID);
+            if (comment == null)
+            {
+                throw new CommentNotFoundException();
+            }
+            if (userID != comment.AuthorId)
+            {
+                throw new PermissionException("editing comment");
+            }
+            comment.PostContent = newCommentModel.PostContent;
+
+            _context.Comments.Update(comment);
+            await _context.SaveChangesAsync();
+            return comment.Id;
+        }
         public async Task<IEnumerable<GetCommentModel>> GetCommentsForPost(Guid postID)
         {
-            var post = await _context.Posts.Include(x => x.PostComments).ThenInclude(c => c.Author).ThenInclude(a => a.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
+            var post = await _context.Posts.AsNoTracking().Include(x => x.PostComments).ThenInclude(c => c.CommentReactions).Include(x => x.PostComments).ThenInclude(c => c.Author).ThenInclude(a => a.Avatar).FirstOrDefaultAsync(p => p.Id == postID);
             if (post == null)
             {
                 throw new PostNotFoundException();
@@ -135,23 +187,36 @@ namespace API.Services
 
             return post.PostComments.Select(c => _mapper.Map<GetCommentModel>(c));
         }
+        public async Task<GetCommentModel> GetCommentByID(Guid commentID)
+        {
+            var comment = await _context.Comments.Include(c => c.CommentReactions).Include(c => c.Author).ThenInclude(u => u.Avatar).FirstOrDefaultAsync(p => p.Id == commentID);
+            if (comment == null)
+            {
+                throw new CommentNotFoundException();
+            }
+            return _mapper.Map<GetCommentModel>(commentID);
+        }
         public async Task RemoveComment(Guid commentId, Guid actorID)
         {
-            var comment = await _context.Comments.FirstOrDefaultAsync(p => p.Id == commentId);
+            var comment = await _context.Comments.Include(c => c.ParentPost).Include(p => p.Author).FirstOrDefaultAsync(p => p.Id == commentId);
             if (comment == null)
             {
                 throw new CommentNotFoundException();
             }
             var user = await _userService.GetUserByID(actorID);
             //if user isn't an author of the comment, he shouldn't be able to delete it
-            if (comment.AuthorId != user.Id)
+            if (!CanRemoveComment(comment, user.Id))
             {
                 throw new PermissionException("removing comment");
             }
             _context.Comments.Remove(comment);
             await _context.SaveChangesAsync();
         }
-
+        public bool CanRemoveComment(Comment comment, Guid requesterId)
+        {
+            //only comment author OR comment's parent post author may remove comments
+            return comment.ParentPost.AuthorId == requesterId || comment.AuthorId == requesterId;
+        }
         #endregion
         #region Reactions
         public async Task CreateReactionForPost(Guid userID, Guid postID, CreateReactionModel reactModel)

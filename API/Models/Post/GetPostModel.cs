@@ -4,13 +4,17 @@ using DAL.Entities;
 
 namespace API.Models.Post
 {
-    public class GetPostModel
+    public class GetPostModel : GetPostContentModel
     {
-        public string? PostContent { get; set; }
-        public ICollection<GetPostPhotoModel> PostAttachments { get; set; } = null!;
         public GetUserModelWithAvatar Author { get; set; } = null!;
         public DateTimeOffset CreationDate { get; set; }
         public int ReactionsCount { get; set; }
         public int CommentsCount { get; set; }
+    }
+
+    public class GetPostContentModel
+    {
+        public string? PostContent { get; set; }
+        public ICollection<GetPostPhotoModel> PostAttachments { get; set; } = null!;
     }
 }
