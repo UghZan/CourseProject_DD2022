@@ -82,6 +82,17 @@ namespace API.Controllers
         {
             return await _postService.GetPostsByUser(userId, amount, startingFrom);
         }
+
+        [HttpGet]
+        public async Task<IEnumerable<GetPostModel>> GetCurrentUserPosts(int amount = 5, int startingFrom = 0)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            return await _postService.GetPostsByUser(userId, amount, startingFrom);
+        }
         #endregion
         #region Comments
         [HttpPost]
