@@ -183,15 +183,37 @@ namespace API.Controllers
         }
 
         [HttpGet]
+        public async Task<int> GetCurrentUserPostReaction(Guid postID)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            return await _postService.GetUserReactionForPost(userId, postID);
+        }
+
+        [HttpGet]
+        public async Task<int> GetCurrentUserCommentReaction(Guid commentID)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            return await _postService.GetUserReactionForComment(userId, commentID);
+        }
+
+        [HttpGet]
         public async Task<IEnumerable<GetReactionModel>> GetPostReactions(Guid postID)
         {
             return await _postService.GetReactionsForPost(postID);
         }
 
         [HttpGet]
-        public async Task<IEnumerable<GetReactionModel>> GetCommentReactions(Guid postID)
+        public async Task<IEnumerable<GetReactionModel>> GetCommentReactions(Guid commentID)
         {
-            return await _postService.GetReactionsForComment(postID);
+            return await _postService.GetReactionsForComment(commentID);
         }
         #endregion
     }

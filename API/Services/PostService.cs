@@ -10,6 +10,7 @@ using DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using System.ComponentModel.Design;
 using System.Linq;
 
 namespace API.Services
@@ -269,11 +270,31 @@ namespace API.Services
 
             return reactions.Select(c => _mapper.Map<GetReactionModel>(c));
         }
+
         public async Task<IEnumerable<GetReactionModel>> GetReactionsForComment(Guid commentID)
         {
             var reactions = await _context.CommentReactions.Include(x => x.ReactionAuthor).ThenInclude(a => a.Avatar).Where(p => p.ReactionCommentId == commentID).ToListAsync();
 
             return reactions.Select(c => _mapper.Map<GetReactionModel>(c));
+        }
+
+        public async Task<int> GetUserReactionForPost(Guid userId, Guid postID)
+        {
+            var reaction = await _context.PostReactions.Include(x => x.ReactionAuthor).FirstOrDefaultAsync(p => p.ReactionAuthorId == userId && p.ReactionPostId == postID);
+            if (reaction == null)
+            {
+                return -1;
+            }
+            return (int)reaction!.ReactionType;
+        }
+        public async Task<int> GetUserReactionForComment(Guid userId, Guid commentID)
+        {
+            var reaction = await _context.CommentReactions.Include(x => x.ReactionAuthor).FirstOrDefaultAsync(p => p.ReactionAuthorId == userId && p.ReactionCommentId == commentID);
+            if(reaction == null)
+            {
+                return -1;
+            }
+            return (int)reaction!.ReactionType;
         }
         public async Task RemoveReactionFromPost(Guid postID, Guid userID)
         {
