@@ -106,7 +106,7 @@ namespace API.Services
         {
             var posts = await _context.Posts
                 .Include(x => x.Author).ThenInclude(x => x.Avatar)
-                .Include(x => x.PostAttachments).Include(p => p.PostComments).AsNoTracking().OrderByDescending(x => x.CreationDate).Where(x => x.AuthorId == userID)
+                .Include(x => x.PostAttachments).Include(p => p.PostComments).Include(p => p.PostReactions).AsNoTracking().OrderByDescending(x => x.CreationDate).Where(x => x.AuthorId == userID)
                 .Take(amount).Skip(startingFrom).Select(x => _mapper.Map<GetPostModel>(x)).ToListAsync();
             return posts;
             
