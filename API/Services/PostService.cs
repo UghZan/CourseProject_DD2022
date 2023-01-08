@@ -111,6 +111,15 @@ namespace API.Services
             return posts;
             
         }
+        public async Task<IEnumerable<GetPostModel>> GetPosts(int amount, int startingFrom)
+        {
+            var posts = await _context.Posts
+                .Include(x => x.Author).ThenInclude(x => x.Avatar)
+                .Include(x => x.PostAttachments).Include(p => p.PostComments).Include(p => p.PostReactions).AsNoTracking().OrderByDescending(x => x.CreationDate)
+                .Take(amount).Skip(startingFrom).Select(x => _mapper.Map<GetPostModel>(x)).ToListAsync();
+            return posts;
+
+        }
         public async Task<AttachModel> GetPostAttachByID(Guid photoID)
         {
             var attach = await _context.PostPhotos.FirstOrDefaultAsync(p => p.Id == photoID);

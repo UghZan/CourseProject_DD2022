@@ -84,6 +84,12 @@ namespace API.Controllers
         }
 
         [HttpGet]
+        public async Task<IEnumerable<GetPostModel>> GetPosts(Guid userId, int amount = 5, int startingFrom = 0)
+        {
+            return await _postService.GetPosts(amount, startingFrom);
+        }
+
+        [HttpGet]
         public async Task<IEnumerable<GetPostModel>> GetCurrentUserPosts(int amount = 5, int startingFrom = 0)
         {
             var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
