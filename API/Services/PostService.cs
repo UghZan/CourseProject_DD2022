@@ -106,17 +106,9 @@ namespace API.Services
         {
             var posts = await _context.Posts
                 .Include(x => x.Author).ThenInclude(x => x.Avatar)
-                .Include(x => x.PostAttachments).AsNoTracking().OrderByDescending(x => x.CreationDate).Where(x => x.AuthorId == userID)
-                .Take(amount).Skip(startingFrom).ToListAsync();
-            List<GetPostModel> userPosts = new List<GetPostModel>();
-            foreach(Post p in posts)
-            {
-                var postModel = _mapper.Map<GetPostModel>(p);
-                var reactions = _context.PostReactions.Where(r => r.ReactionPostId == p.Id).Count();
-                postModel.ReactionsCount = reactions;
-                userPosts.Add(_mapper.Map<GetPostModel>(p));
-            }
-            return userPosts;
+                .Include(x => x.PostAttachments).Include(p => p.PostComments).AsNoTracking().OrderByDescending(x => x.CreationDate).Where(x => x.AuthorId == userID)
+                .Take(amount).Skip(startingFrom).Select(x => _mapper.Map<GetPostModel>(x)).ToListAsync();
+            return posts;
             
         }
         public async Task<AttachModel> GetPostAttachByID(Guid photoID)
