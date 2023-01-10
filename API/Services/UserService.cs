@@ -153,6 +153,15 @@ namespace API.Services
             return user.Subscribers?.Select(s => _mapper.Map<GetUserModelWithAvatar>(s)).ToList();
         }
 
+        public async Task<bool> IsUserSubscribedToTarget(Guid userId, Guid targetId)
+        {
+            var user = await _context.Users.Include(x => x.Subscribers).FirstOrDefaultAsync(u => u.Id == targetId);
+            if (user == null)
+                throw new UserNotFoundException();
+
+            return user.Subscribers?.Any(u => u.Id == userId) ?? false;
+        }
+
         #endregion
         public void Dispose()
         {

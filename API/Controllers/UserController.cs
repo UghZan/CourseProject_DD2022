@@ -88,6 +88,17 @@ namespace API.Controllers
         {
             return await _userService.GetUserSubscribers(userId);
         }
+
+        [HttpGet]
+        public async Task<bool> IsUserSubscribedToTarget(Guid targetId)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            return await _userService.IsUserSubscribedToTarget(userId, targetId);
+        }
         #endregion
     }
 }
