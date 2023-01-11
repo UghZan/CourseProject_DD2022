@@ -118,10 +118,10 @@ namespace API.Services
         #region Subs
         public async Task SubscribeToUser(Guid requesterId, Guid targetId)
         {
-            var user = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == requesterId);
+            var user = await _context.Users.Include(x => x.Avatar).Include(x => x.Subscriptions).FirstOrDefaultAsync(u => u.Id == requesterId);
             if (user == null)
                 throw new UserNotFoundException("request creator");
-            var targetUser = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == targetId);
+            var targetUser = await _context.Users.Include(x => x.Avatar).Include(x => x.Subscribers).FirstOrDefaultAsync(u => u.Id == targetId);
             if (targetUser == null)
                 throw new UserNotFoundException("request target");
 
@@ -144,24 +144,24 @@ namespace API.Services
 
         public async Task UnsubscribeFrom(Guid requesterId, Guid targetId)
         {
-            var user = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == requesterId);
+            var user = await _context.Users.Include(x => x.Avatar).Include(x => x.Subscriptions).FirstOrDefaultAsync(u => u.Id == requesterId);
             if (user == null)
                 throw new UserNotFoundException("request creator");
-            var targetUser = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == targetId);
+            var targetUser = await _context.Users.Include(x => x.Avatar).Include(x => x.Subscribers).FirstOrDefaultAsync(u => u.Id == targetId);
             if (targetUser == null)
                 throw new UserNotFoundException("request target");
 
             if (targetUser.Subscribers == null)
-                throw new Exceptions.InvalidOperationException("Trying to unsubscribe while not subscribed");
+                throw new Exceptions.InvalidOperationException("No subscribers on target user");
             else
             {
                 if (!targetUser.Subscribers.Any(u => u.Id == requesterId))
                 {
-                    throw new Exceptions.InvalidOperationException("Trying to unsubscribe while not subscribed");
+                    throw new Exceptions.InvalidOperationException("No requester found in target's subscribers");
                 }
             }
             if (user.Subscriptions == null)
-                throw new Exceptions.InvalidOperationException("Trying to unsubscribe while not subscribed");
+                throw new Exceptions.InvalidOperationException("No subscriptions on requesting user");
             targetUser.Subscribers.Remove(user);
             user.Subscriptions.Remove(targetUser);
 
