@@ -21,9 +21,10 @@ namespace API.Mapper
             CreateMap<DAL.Entities.User, GetUserModel>()
                 .ForMember(u => u.SubscribersCount, m => m.MapFrom(u => u.Subscribers!.Count()))
                 .ForMember(u => u.SubscriptionsCount, m => m.MapFrom(u => u.Subscriptions!.Count()));
-            CreateMap<DAL.Entities.User, GetUserModelWithAvatar>().AfterMap<UserToUserModelAvatarAction>()
+            CreateMap<DAL.Entities.User, GetUserModelWithAvatar>()
                 .ForMember(u => u.SubscribersCount, m => m.MapFrom(u => u.Subscribers!.Count()))
-                .ForMember(u => u.SubscriptionsCount, m => m.MapFrom(u => u.Subscriptions!.Count()));
+                .ForMember(u => u.SubscriptionsCount, m => m.MapFrom(u => u.Subscriptions!.Count()))
+                .AfterMap<UserToUserModelAvatarAction>();
 
             CreateMap<DAL.Entities.Avatar, AttachModel>();
             CreateMap<DAL.Entities.PostPhoto, AttachModel>();

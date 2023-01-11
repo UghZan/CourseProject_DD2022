@@ -120,6 +120,19 @@ namespace API.Services
             return posts;
 
         }
+        public async Task<IEnumerable<GetPostModel>> GetPostsForUser(Guid userId, int amount, int startingFrom)
+        {
+            var user = await _userService.GetUserByID(userId);
+            var applicableAuthors = new List<Guid>();
+            if(user.Subscriptions != null) applicableAuthors = user.Subscriptions.Select(x => x.Id).ToList();
+            applicableAuthors.Add(user.Id);
+            var posts = await _context.Posts.Where(e => applicableAuthors.Contains(e.AuthorId))
+                .Include(x => x.Author).ThenInclude(x => x.Avatar)
+                .Include(x => x.PostAttachments).Include(p => p.PostComments).Include(p => p.PostReactions).AsNoTracking().OrderByDescending(x => x.CreationDate)
+                .Take(amount).Skip(startingFrom).Select(x => _mapper.Map<GetPostModel>(x)).ToListAsync();
+            return posts;
+
+        }
         public async Task<AttachModel> GetPostAttachByID(Guid photoID)
         {
             var attach = await _context.PostPhotos.FirstOrDefaultAsync(p => p.Id == photoID);

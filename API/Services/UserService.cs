@@ -93,7 +93,7 @@ namespace API.Services
 
         public async Task<User> GetUserByID(Guid id)
         {
-            var user = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == id);
+            var user = await _context.Users.Include(x => x.Avatar).Include(x => x.Subscribers).Include(x => x.Subscriptions).FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
             {
                 throw new UserNotFoundException();
