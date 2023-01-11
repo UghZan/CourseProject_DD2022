@@ -127,6 +127,13 @@ namespace API.Services
 
             if (targetUser.Subscribers == null)
                 targetUser.Subscribers = new List<User>();
+            else
+            {
+                if (targetUser.Subscribers.Any(u => u.Id == requesterId))
+                {
+                    throw new Exceptions.InvalidOperationException("Trying to subscribe the second time");
+                }
+            }
             if (user.Subscriptions == null)
                 user.Subscriptions = new List<User>();
             targetUser.Subscribers.Add(user);
@@ -134,7 +141,34 @@ namespace API.Services
 
             await _context.SaveChangesAsync();
         }
-        
+
+        public async Task UnsubscribeFrom(Guid requesterId, Guid targetId)
+        {
+            var user = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == requesterId);
+            if (user == null)
+                throw new UserNotFoundException("request creator");
+            var targetUser = await _context.Users.Include(x => x.Avatar).FirstOrDefaultAsync(u => u.Id == targetId);
+            if (targetUser == null)
+                throw new UserNotFoundException("request target");
+
+            if (targetUser.Subscribers == null)
+                throw new Exceptions.InvalidOperationException("Trying to unsubscribe while not subscribed");
+            else
+            {
+                if (!targetUser.Subscribers.Any(u => u.Id == requesterId))
+                {
+                    throw new Exceptions.InvalidOperationException("Trying to unsubscribe while not subscribed");
+                }
+            }
+            if (user.Subscriptions == null)
+                throw new Exceptions.InvalidOperationException("Trying to unsubscribe while not subscribed");
+            targetUser.Subscribers.Remove(user);
+            user.Subscriptions.Remove(targetUser);
+
+            await _context.SaveChangesAsync();
+        }
+
+
         public async Task<ICollection<GetUserModelWithAvatar>?> GetUserSubscriptions(Guid userId)
         {
             var user = await _context.Users.Include(x => x.Subscriptions)?.ThenInclude(u => u.Avatar).FirstOrDefaultAsync(u => u.Id == userId);

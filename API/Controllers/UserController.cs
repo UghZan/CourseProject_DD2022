@@ -77,6 +77,21 @@ namespace API.Controllers
             await _userService.SubscribeToUser(userId, targetId);
         }
 
+        [HttpPost]
+        public async Task UnsubscribeFromUser(Guid targetId)
+        {
+            var userId = User.GetClaimValue<Guid>(ClaimNames.userId);
+            if (userId.Equals(default))
+            {
+                throw new UnauthorizedAccessException();
+            }
+            if (userId.Equals(targetId))
+            {
+                throw new Exceptions.InvalidOperationException("unsubscription from self");
+            }
+            await _userService.UnsubscribeFrom(userId, targetId);
+        }
+
         [HttpGet]
         public async Task<ICollection<GetUserModelWithAvatar>?> GetUserSubscriptions(Guid userId)
         {
