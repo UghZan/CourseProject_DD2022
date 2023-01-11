@@ -56,6 +56,12 @@ namespace API.Controllers
         }
 
         [HttpGet]
+        public async Task<GetUserModelWithAvatar> GetUserById(Guid userId)
+        {
+            return await _userService.GetUserModelWithAvatarByID(userId);
+        }
+
+        [HttpGet]
         public async Task<IEnumerable<GetUserModelWithAvatar>> GetUsers()
         {
             return await _userService.GetUsers();
